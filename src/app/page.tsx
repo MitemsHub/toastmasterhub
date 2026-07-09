@@ -115,6 +115,8 @@ export default async function Home({ searchParams }: HomePageProps) {
         formData,
       );
     } catch (error) {
+      console.error("VPE signup failed", error);
+
       if (error instanceof InvalidSignupOtcError) {
         redirect("/?mode=signup&error=invalid-signup-otc");
       }
