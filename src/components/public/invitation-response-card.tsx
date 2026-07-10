@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { InvitationConfirmationDetails } from "@/lib/invitations/response";
+import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
 type InvitationResponseCardProps = {
   invitation: InvitationConfirmationDetails;
@@ -81,22 +82,22 @@ export function InvitationResponseCard({
       {invitation.canRespond ? (
         <form action={action} className="mt-8 grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="token" value={token} />
-          <button
-            type="submit"
+          <PendingSubmitButton
             name="response"
             value="accepted"
+            pendingLabel="Saving..."
             className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
           >
             Yes, I will
-          </button>
-          <button
-            type="submit"
+          </PendingSubmitButton>
+          <PendingSubmitButton
             name="response"
             value="declined"
+            pendingLabel="Saving..."
             className="inline-flex h-12 items-center justify-center rounded-full border border-[#e6ddd1] bg-[#faf7f2] px-5 text-sm font-semibold text-zinc-700 hover:-translate-y-0.5 hover:border-zinc-300 hover:text-zinc-950"
           >
             No, I won&apos;t
-          </button>
+          </PendingSubmitButton>
         </form>
       ) : (
         <div className="mt-8 space-y-3">

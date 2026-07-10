@@ -13,8 +13,18 @@ type ConfirmationPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+type SavedResponse = "accepted" | "declined";
+
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function getSavedResponse(value: string | undefined): SavedResponse | undefined {
+  if (value === "accepted" || value === "declined") {
+    return value;
+  }
+
+  return undefined;
 }
 
 export default async function ConfirmationPage({
@@ -23,20 +33,25 @@ export default async function ConfirmationPage({
 }: ConfirmationPageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = searchParams ? await searchParams : {};
-  const feedbackMessage =
+  const savedResponse =
     getSearchParamValue(resolvedSearchParams.saved) === "1"
-      ? getSearchParamValue(resolvedSearchParams.response) === "declined"
-        ? "Thank you. Your response has been saved and the VPE can reschedule if needed."
-        : "Thank you. Your availability has been saved."
+      ? getSavedResponse(getSearchParamValue(resolvedSearchParams.response))
       : undefined;
+  const feedbackMessage =
+    savedResponse === "declined"
+      ? "Sorry, we will reschedule."
+      : savedResponse === "accepted"
+        ? "Thank you. Your availability has been saved."
+        : undefined;
   let invitation = null;
 
   async function saveResponse(formData: FormData) {
     "use server";
 
-    const token = typeof formData.get("token") === "string" ? String(formData.get("token")) : "";
+    const token = resolvedParams.token;
     const response =
       formData.get("response") === "declined" ? "declined" : "accepted";
+    const confirmationPath = `/confirm/${encodeURIComponent(token)}`;
 
     try {
       const admin = await getAppwriteAdmin();
@@ -45,10 +60,10 @@ export default async function ConfirmationPage({
         response,
       });
     } catch {
-      redirect(`/confirm/${token}`);
+      redirect(confirmationPath);
     }
 
-    redirect(`/confirm/${token}?saved=1&response=${response}`);
+    redirect(`${confirmationPath}?saved=1&response=${response}`);
   }
 
   try {
@@ -56,6 +71,28 @@ export default async function ConfirmationPage({
     invitation = await getInvitationConfirmationDetails(pb, resolvedParams.token);
   } catch {
     invitation = null;
+  }
+
+  if (!invitation && savedResponse) {
+    return (
+      <main className="min-h-screen bg-transparent px-4 py-8 sm:px-8 lg:px-12">
+        <div className="mx-auto flex min-h-[100dvh] max-w-4xl items-center justify-center">
+          <section className="rounded-[1.8rem] border border-[var(--panel-border)] bg-[var(--panel)] p-8 text-center shadow-[var(--shadow-panel)] backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+              Evaluator confirmation
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.06em] text-zinc-950">
+              {savedResponse === "declined" ? "Sorry, we will reschedule." : "Thank you."}
+            </h1>
+            <p className="mt-4 text-sm leading-7 text-[var(--ink-soft)]">
+              {savedResponse === "declined"
+                ? "Your response has been saved and the VPE can send a new date if needed."
+                : "Your availability has been saved successfully."}
+            </p>
+          </section>
+        </div>
+      </main>
+    );
   }
 
   if (!invitation) {

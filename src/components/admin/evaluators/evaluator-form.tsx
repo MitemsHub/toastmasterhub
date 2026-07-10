@@ -1,4 +1,5 @@
 import { Reveal } from "@/components/motion/reveal";
+import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
 type EvaluatorFormProps = {
   action?: (formData: FormData) => void | Promise<void>;
@@ -115,12 +116,12 @@ export function EvaluatorForm({
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-zinc-500">The evaluator will receive the link by email.</p>
-          <button
-            type="submit"
+          <PendingSubmitButton
+            pendingLabel="Sending for confirmation..."
             className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-6 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
           >
             Send for confirmation
-          </button>
+          </PendingSubmitButton>
         </div>
       </form>
     </Reveal>

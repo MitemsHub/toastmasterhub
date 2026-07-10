@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { LandingVisualCarousel } from "@/components/home/landing-visual-carousel";
 import { Reveal } from "@/components/motion/reveal";
+import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
 type LandingPageProps = {
   loginAction?: (formData: FormData) => void | Promise<void>;
@@ -225,12 +226,12 @@ export function LandingPage({
                           </p>
                         ) : null}
 
-                        <button
-                          type="submit"
+                        <PendingSubmitButton
+                          pendingLabel="Logging in..."
                           className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
                         >
                           Login
-                        </button>
+                        </PendingSubmitButton>
 
                         <div className="mt-4 rounded-[1.4rem] border border-[#e5ddd2] bg-[#f7f2eb] px-4 py-4 text-sm text-zinc-600">
                           No access code yet?{" "}
@@ -304,12 +305,12 @@ export function LandingPage({
                           </p>
                         ) : null}
 
-                        <button
-                          type="submit"
+                        <PendingSubmitButton
+                          pendingLabel="Sending access code..."
                           className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
                         >
                           Send access code
-                        </button>
+                        </PendingSubmitButton>
 
                         <div className="mt-4 rounded-[1.4rem] border border-[#e5ddd2] bg-[#f7f2eb] px-4 py-4 text-sm text-zinc-600">
                           Already have a code?{" "}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { Reveal } from "@/components/motion/reveal";
+import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
 type InvitationListItem = {
   id: string;
@@ -171,12 +172,12 @@ export function InvitationStatusList({
                   </button>
                   <form action={cancelAction}>
                     <input type="hidden" name="invitationId" value={invitation.id} />
-                    <button
-                      type="submit"
+                    <PendingSubmitButton
+                      pendingLabel="Cancelling..."
                       className="inline-flex h-10 items-center justify-center rounded-full border border-[#e6ddd1] bg-[#fcfaf7] px-4 text-sm font-medium text-zinc-500 hover:-translate-y-0.5 hover:border-rose-200 hover:text-rose-700"
                     >
                       Cancel
-                    </button>
+                    </PendingSubmitButton>
                   </form>
                 </div>
               </article>
@@ -243,12 +244,12 @@ export function InvitationStatusList({
                 >
                   Close
                 </button>
-                <button
-                  type="submit"
+                <PendingSubmitButton
+                  pendingLabel="Saving..."
                   className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
                 >
                   Save new date
-                </button>
+                </PendingSubmitButton>
               </div>
             </form>
           </div>

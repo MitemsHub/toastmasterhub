@@ -46,4 +46,36 @@ describe("ConfirmationPage", () => {
     expect(screen.getByText("Amina Bello")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /yes, i will/i })).toBeInTheDocument();
   });
+
+  it("shows the thank-you state after a saved acceptance even if the invitation refetch fails", async () => {
+    vi.mocked(getAppwriteAdmin).mockResolvedValue({} as never);
+    vi.mocked(getInvitationConfirmationDetails).mockResolvedValue(null);
+
+    render(
+      await ConfirmationPage({
+        params: Promise.resolve({ token: "plain-token" }),
+        searchParams: Promise.resolve({ saved: "1", response: "accepted" }),
+      }),
+    );
+
+    expect(screen.getByText(/thank you\./i)).toBeInTheDocument();
+    expect(screen.getByText(/your availability has been saved successfully/i)).toBeInTheDocument();
+  });
+
+  it("shows the reschedule state after a saved decline even if the invitation refetch fails", async () => {
+    vi.mocked(getAppwriteAdmin).mockResolvedValue({} as never);
+    vi.mocked(getInvitationConfirmationDetails).mockResolvedValue(null);
+
+    render(
+      await ConfirmationPage({
+        params: Promise.resolve({ token: "plain-token" }),
+        searchParams: Promise.resolve({ saved: "1", response: "declined" }),
+      }),
+    );
+
+    expect(screen.getByText(/sorry, we will reschedule\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/your response has been saved and the vpe can send a new date if needed/i),
+    ).toBeInTheDocument();
+  });
 });
