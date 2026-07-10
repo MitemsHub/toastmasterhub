@@ -11,8 +11,6 @@ function getAppwriteRemotePattern() {
     };
   } catch {
     return null;
-  } catch {
-    return null;
   }
 }
 
