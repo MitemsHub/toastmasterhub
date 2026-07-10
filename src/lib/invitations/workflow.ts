@@ -27,6 +27,10 @@ type InvitationEditableRecord = {
   meeting_title: string;
   meeting_date: string;
   meeting_note?: string;
+  sent_at?: string;
+  responded_at?: string;
+  status: InvitationRecord["status"];
+  token_hash: string;
   expand?: {
     evaluator?: {
       full_name?: string;
@@ -65,7 +69,7 @@ async function getScopedInvitation(
   invitationId: string,
 ) {
   return pb.collection("invitations").getFirstListItem<InvitationEditableRecord>(
-    pb.filter("id = {:invitationId} && vpe = {:vpeId}", {
+    pb.filter("$id = {:invitationId} && vpe = {:vpeId}", {
       invitationId,
       vpeId,
     }),
@@ -99,26 +103,31 @@ export async function createConfirmationRequest(
     token_hash: token.tokenHash,
   });
 
-  await sendInvitationEmail(
-    transporter,
-    {
-      fromAddress: config.fromAddress,
-      appBaseUrl: config.appBaseUrl,
-    },
-    {
-      evaluatorName: evaluator.full_name,
-      evaluatorEmail: evaluator.email,
-      vpeName: context.vpeName,
-      meetingTitle: invitationInput.meetingTitle,
-      meetingDate: invitationInput.meetingDate,
-      meetingNote: invitationInput.meetingNote,
-      token: token.token,
-    },
-  );
+  try {
+    await sendInvitationEmail(
+      transporter,
+      {
+        fromAddress: config.fromAddress,
+        appBaseUrl: config.appBaseUrl,
+      },
+      {
+        evaluatorName: evaluator.full_name,
+        evaluatorEmail: evaluator.email,
+        vpeName: context.vpeName,
+        meetingTitle: invitationInput.meetingTitle,
+        meetingDate: invitationInput.meetingDate,
+        meetingNote: invitationInput.meetingNote,
+        token: token.token,
+      },
+    );
 
-  await pb.collection("invitations").update(invitation.id, {
-    sent_at: now(),
-  });
+    await pb.collection("invitations").update(invitation.id, {
+      sent_at: now(),
+    });
+  } catch (error) {
+    await pb.collection("invitations").delete(invitation.id);
+    throw error;
+  }
 }
 
 export async function rescheduleInvitation(
@@ -136,6 +145,15 @@ export async function rescheduleInvitation(
   const input = getInvitationInput(formData);
   const record = await getScopedInvitation(pb, context.vpeId, invitationId);
   const token = await createInvitationToken();
+  const previousInvitationState = {
+    meeting_title: record.meeting_title,
+    meeting_date: record.meeting_date,
+    meeting_note: record.meeting_note ?? "",
+    responded_at: record.responded_at ?? "",
+    sent_at: record.sent_at ?? "",
+    status: record.status,
+    token_hash: record.token_hash,
+  };
 
   await pb.collection("invitations").update(invitationId, {
     meeting_title: input.meetingTitle,
@@ -147,22 +165,27 @@ export async function rescheduleInvitation(
     token_hash: token.tokenHash,
   });
 
-  await sendInvitationEmail(
-    transporter,
-    {
-      fromAddress: config.fromAddress,
-      appBaseUrl: config.appBaseUrl,
-    },
-    {
-      evaluatorName: record.expand?.evaluator?.full_name ?? "Evaluator",
-      evaluatorEmail: record.expand?.evaluator?.email ?? "",
-      vpeName: context.vpeName,
-      meetingTitle: input.meetingTitle,
-      meetingDate: input.meetingDate,
-      meetingNote: input.meetingNote,
-      token: token.token,
-    },
-  );
+  try {
+    await sendInvitationEmail(
+      transporter,
+      {
+        fromAddress: config.fromAddress,
+        appBaseUrl: config.appBaseUrl,
+      },
+      {
+        evaluatorName: record.expand?.evaluator?.full_name ?? "Evaluator",
+        evaluatorEmail: record.expand?.evaluator?.email ?? "",
+        vpeName: context.vpeName,
+        meetingTitle: input.meetingTitle,
+        meetingDate: input.meetingDate,
+        meetingNote: input.meetingNote,
+        token: token.token,
+      },
+    );
+  } catch (error) {
+    await pb.collection("invitations").update(invitationId, previousInvitationState);
+    throw error;
+  }
 }
 
 export async function cancelInvitation(

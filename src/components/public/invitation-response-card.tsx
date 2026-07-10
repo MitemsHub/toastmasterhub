@@ -29,13 +29,19 @@ export function InvitationResponseCard({
   return (
     <section className="mx-auto w-full max-w-4xl overflow-hidden rounded-[1.8rem] border border-[#e6ddd1] bg-white p-6 text-zinc-950 shadow-[0_40px_120px_-70px_rgba(15,23,42,0.28)] sm:p-8">
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
-        <Image
-          src={invitation.evaluatorPhotoUrl}
-          alt={invitation.evaluatorName}
-          width={112}
-          height={112}
-          className="h-24 w-24 rounded-[1.2rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)] sm:h-28 sm:w-28"
-        />
+        {invitation.evaluatorPhotoUrl ? (
+          <Image
+            src={invitation.evaluatorPhotoUrl}
+            alt={invitation.evaluatorName}
+            width={112}
+            height={112}
+            className="h-24 w-24 rounded-[1.2rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)] sm:h-28 sm:w-28"
+          />
+        ) : (
+          <div className="flex h-24 w-24 items-center justify-center rounded-[1.2rem] bg-[#f5f0e8] text-2xl font-semibold text-zinc-500 shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)] sm:h-28 sm:w-28">
+            {invitation.evaluatorName.slice(0, 1)}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
             Evaluator confirmation

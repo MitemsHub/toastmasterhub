@@ -26,9 +26,16 @@
   - Hosted deploy succeeds and renders correctly, so the remaining failure path is after form submission.
   - Signup currently creates/updates the VPE before attempting email delivery.
   - The generic banner appears when the email step throws, which matches the hosted-only symptom.
+- Follow-up backend verification isolated a deeper issue:
+  - direct Appwrite document create and update succeed
+  - the custom Appwrite REST client was generating invalid query strings like `equal("email",["value"])`
+  - Appwrite Cloud accepts JSON-string queries with `attribute`, for example `{"method":"equal","attribute":"email","values":["value"]}`
+  - this invalid lookup query was causing hosted signup to fail before the email step
 
 ## Verification Conclusion
 - Implemented a resilience fix:
   - if VPE creation succeeds but email delivery fails, the generated access code is preserved
   - the hosted user now receives the access code directly in the signup success banner instead of dead-ending on the generic failure state
+- Implemented the root-cause fix:
+  - Appwrite query builder now emits JSON-string queries for `equal`, `orderAsc` / `orderDesc`, and `limit`
 - Pending user redeploy + verification

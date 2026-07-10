@@ -160,7 +160,11 @@ async function requestWithoutJson(
 }
 
 function createQueryEqual(field: string, value: string) {
-  return `equal("${field}",${JSON.stringify([value])})`;
+  return JSON.stringify({
+    method: "equal",
+    attribute: field,
+    values: [value],
+  });
 }
 
 function createSortQuery(sort: string) {
@@ -173,7 +177,17 @@ function createSortQuery(sort: string) {
         ? "$updatedAt"
         : rawField;
 
-  return `${isDescending ? "orderDesc" : "orderAsc"}("${appwriteField}")`;
+  return JSON.stringify({
+    method: isDescending ? "orderDesc" : "orderAsc",
+    attribute: appwriteField,
+  });
+}
+
+function createLimitQuery(limit: number) {
+  return JSON.stringify({
+    method: "limit",
+    values: [limit],
+  });
 }
 
 function createListQueries(filter?: BackendFilter, sort?: string, limit = 5000) {
@@ -185,7 +199,7 @@ function createListQueries(filter?: BackendFilter, sort?: string, limit = 5000) 
     queries.push(createSortQuery(sort));
   }
 
-  queries.push(`limit(${limit})`);
+  queries.push(createLimitQuery(limit));
 
   return queries;
 }

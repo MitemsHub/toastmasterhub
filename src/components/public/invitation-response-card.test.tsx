@@ -52,4 +52,26 @@ describe("InvitationResponseCard", () => {
     expect(screen.getByText(/your availability is confirmed/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /yes, i will/i })).not.toBeInTheDocument();
   });
+
+  it("falls back to an initial when the evaluator portrait is missing", () => {
+    render(
+      <InvitationResponseCard
+        invitation={{
+          invitationId: "inv_1",
+          evaluatorName: "Amina Bello",
+          evaluatorProfile: "Warm evaluator who gives direct and practical feedback.",
+          evaluatorPhotoUrl: "",
+          meetingTitle: "Toastmasters Club Meeting",
+          meetingDate: "2026-08-15",
+          meetingNote: "",
+          status: "pending",
+          canRespond: true,
+        }}
+        token="plain-token"
+      />,
+    );
+
+    expect(screen.queryByRole("img", { name: "Amina Bello" })).not.toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+  });
 });
