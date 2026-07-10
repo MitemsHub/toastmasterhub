@@ -32,7 +32,12 @@ declare module "next/headers" {
     delete(name: string): void;
   };
 
+  export type HeaderStore = {
+    get(name: string): string | null;
+  };
+
   export function cookies(): Promise<CookieStore>;
+  export function headers(): Promise<HeaderStore>;
 }
 
 declare module "next/navigation" {
