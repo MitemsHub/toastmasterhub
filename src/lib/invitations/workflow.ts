@@ -143,6 +143,23 @@ export async function rescheduleInvitation(
 ) {
   const invitationId = getInvitationId(formData);
   const input = getInvitationInput(formData);
+  // #region debug-point C:reschedule-start
+  await fetch("http://127.0.0.1:7777/event", {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: "confirm-reschedule-load",
+      runId: "pre-fix",
+      hypothesisId: "C",
+      location: "src/lib/invitations/workflow.ts:rescheduleInvitation:start",
+      msg: "[DEBUG] Starting invitation reschedule",
+      data: {
+        invitationId,
+        meetingDate: input.meetingDate,
+      },
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   const record = await getScopedInvitation(pb, context.vpeId, invitationId);
   const token = await createInvitationToken();
   const previousInvitationState = {
@@ -155,6 +172,25 @@ export async function rescheduleInvitation(
     token_hash: record.token_hash,
   };
 
+  // #region debug-point C:reschedule-record
+  await fetch("http://127.0.0.1:7777/event", {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: "confirm-reschedule-load",
+      runId: "pre-fix",
+      hypothesisId: "C",
+      location: "src/lib/invitations/workflow.ts:rescheduleInvitation:record",
+      msg: "[DEBUG] Loaded invitation for reschedule",
+      data: {
+        invitationId: record.id,
+        status: record.status,
+        evaluatorEmail: record.expand?.evaluator?.email ?? "",
+      },
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   await pb.collection("invitations").update(invitationId, {
     meeting_title: input.meetingTitle,
     meeting_date: input.meetingDate,
@@ -164,6 +200,24 @@ export async function rescheduleInvitation(
     status: "pending",
     token_hash: token.tokenHash,
   });
+
+  // #region debug-point C:reschedule-updated
+  await fetch("http://127.0.0.1:7777/event", {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: "confirm-reschedule-load",
+      runId: "pre-fix",
+      hypothesisId: "C",
+      location: "src/lib/invitations/workflow.ts:rescheduleInvitation:updated",
+      msg: "[DEBUG] Updated invitation before resend",
+      data: {
+        invitationId,
+        nextStatus: "pending",
+      },
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   try {
     await sendInvitationEmail(
@@ -182,7 +236,40 @@ export async function rescheduleInvitation(
         token: token.token,
       },
     );
+    // #region debug-point C:reschedule-success
+    await fetch("http://127.0.0.1:7777/event", {
+      method: "POST",
+      body: JSON.stringify({
+        sessionId: "confirm-reschedule-load",
+        runId: "pre-fix",
+        hypothesisId: "C",
+        location: "src/lib/invitations/workflow.ts:rescheduleInvitation:success",
+        msg: "[DEBUG] Reschedule email sent successfully",
+        data: {
+          invitationId,
+        },
+        ts: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
   } catch (error) {
+    // #region debug-point C:reschedule-failed
+    await fetch("http://127.0.0.1:7777/event", {
+      method: "POST",
+      body: JSON.stringify({
+        sessionId: "confirm-reschedule-load",
+        runId: "pre-fix",
+        hypothesisId: "C",
+        location: "src/lib/invitations/workflow.ts:rescheduleInvitation:failed",
+        msg: "[DEBUG] Reschedule failed and rollback started",
+        data: {
+          invitationId,
+          error: error instanceof Error ? error.message : "unknown-error",
+        },
+        ts: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     await pb.collection("invitations").update(invitationId, previousInvitationState);
     throw error;
   }

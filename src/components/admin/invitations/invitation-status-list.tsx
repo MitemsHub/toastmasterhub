@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import { Reveal } from "@/components/motion/reveal";
-import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
 type InvitationListItem = {
   id: string;
@@ -39,22 +40,123 @@ export function InvitationStatusList({
   initialOpenInvitationId,
   errorMessage,
   successMessage,
-  rescheduleAction,
-  cancelAction,
 }: {
   invitations: InvitationListItem[];
   activeFilter: "all" | "pending" | "accepted" | "declined";
   initialOpenInvitationId?: string;
   errorMessage?: string;
   successMessage?: string;
-  rescheduleAction?: (formData: FormData) => void | Promise<void>;
-  cancelAction?: (formData: FormData) => void | Promise<void>;
 }) {
+  const router = useRouter();
   const [openInvitationId, setOpenInvitationId] = useState(initialOpenInvitationId ?? "");
+  const [localErrorMessage, setLocalErrorMessage] = useState(errorMessage);
+  const [localSuccessMessage, setLocalSuccessMessage] = useState(successMessage);
+  const [pendingAction, setPendingAction] = useState<{
+    invitationId: string;
+    kind: "reschedule" | "cancel";
+  } | null>(null);
   const selectedInvitation = useMemo(
     () => invitations.find((invitation) => invitation.id === openInvitationId),
     [invitations, openInvitationId],
   );
+
+  async function handleCancel(invitationId: string) {
+    setPendingAction({ invitationId, kind: "cancel" });
+    setLocalErrorMessage(undefined);
+    setLocalSuccessMessage(undefined);
+
+    try {
+      const result = await fetch("/api/admin/invitations/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ invitationId }),
+      });
+      const payload = (await result.json().catch(() => ({}))) as { message?: string };
+
+      if (!result.ok) {
+        throw new Error(payload.message || "We could not cancel that confirmation right now.");
+      }
+
+      setLocalSuccessMessage(payload.message || "Confirmation cancelled.");
+      router.replace(
+        activeFilter === "all"
+          ? "/admin/invitations"
+          : `/admin/invitations?status=${encodeURIComponent(activeFilter)}`,
+      );
+      router.refresh();
+    } catch (error) {
+      setLocalErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "We could not cancel that confirmation right now.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleRescheduleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedInvitation) {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const invitationId =
+      typeof formData.get("invitationId") === "string" ? String(formData.get("invitationId")) : "";
+    const meetingTitle =
+      typeof formData.get("meetingTitle") === "string" ? String(formData.get("meetingTitle")) : "";
+    const meetingDate =
+      typeof formData.get("meetingDate") === "string" ? String(formData.get("meetingDate")) : "";
+    const meetingNote =
+      typeof formData.get("meetingNote") === "string" ? String(formData.get("meetingNote")) : "";
+
+    setPendingAction({ invitationId, kind: "reschedule" });
+    setLocalErrorMessage(undefined);
+    setLocalSuccessMessage(undefined);
+
+    try {
+      const result = await fetch("/api/admin/invitations/reschedule", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          invitationId,
+          meetingTitle,
+          meetingDate,
+          meetingNote,
+        }),
+      });
+      const payload = (await result.json().catch(() => ({}))) as { message?: string };
+
+      if (!result.ok) {
+        throw new Error(payload.message || "We could not save that new date. Please review it and try again.");
+      }
+
+      setLocalSuccessMessage(
+        payload.message || "Meeting date updated and a fresh confirmation link has been sent.",
+      );
+      setOpenInvitationId("");
+      router.replace(
+        activeFilter === "all"
+          ? "/admin/invitations?updated=1"
+          : `/admin/invitations?updated=1&status=${encodeURIComponent(activeFilter)}`,
+      );
+      router.refresh();
+    } catch (error) {
+      setLocalErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "We could not save that new date. Please review it and try again.",
+      );
+    } finally {
+      setPendingAction(null);
+    }
+  }
 
   if (invitations.length === 0) {
     return (
@@ -92,15 +194,15 @@ export function InvitationStatusList({
             </div>
           </div>
 
-          {errorMessage ? (
+          {localErrorMessage ? (
             <p className="mt-4 rounded-[1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {errorMessage}
+              {localErrorMessage}
             </p>
           ) : null}
 
-          {successMessage ? (
+          {localSuccessMessage ? (
             <p className="mt-4 rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {successMessage}
+              {localSuccessMessage}
             </p>
           ) : null}
 
@@ -170,15 +272,28 @@ export function InvitationStatusList({
                   >
                     Reschedule
                   </button>
-                  <form action={cancelAction}>
-                    <input type="hidden" name="invitationId" value={invitation.id} />
-                    <PendingSubmitButton
-                      pendingLabel="Cancelling..."
-                      className="inline-flex h-10 items-center justify-center rounded-full border border-[#e6ddd1] bg-[#fcfaf7] px-4 text-sm font-medium text-zinc-500 hover:-translate-y-0.5 hover:border-rose-200 hover:text-rose-700"
-                    >
-                      Cancel
-                    </PendingSubmitButton>
-                  </form>
+                  <button
+                    type="button"
+                    disabled={pendingAction !== null}
+                    onClick={() => void handleCancel(invitation.id)}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-[#e6ddd1] bg-[#fcfaf7] px-4 text-sm font-medium text-zinc-500 hover:-translate-y-0.5 hover:border-rose-200 hover:text-rose-700"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      {pendingAction?.kind === "cancel" && pendingAction.invitationId === invitation.id ? (
+                        <motion.span
+                          aria-hidden="true"
+                          className="h-4 w-4 rounded-full border-2 border-current/25 border-t-current"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                        />
+                      ) : null}
+                      <span>
+                        {pendingAction?.kind === "cancel" && pendingAction.invitationId === invitation.id
+                          ? "Cancelling..."
+                          : "Cancel"}
+                      </span>
+                    </span>
+                  </button>
                 </div>
               </article>
             ))}
@@ -216,7 +331,7 @@ export function InvitationStatusList({
               </button>
             </div>
 
-            <form action={rescheduleAction} className="mt-5 space-y-4">
+            <form onSubmit={handleRescheduleSubmit} className="mt-5 space-y-4">
               <input type="hidden" name="invitationId" value={selectedInvitation.id} />
               <input type="hidden" name="meetingTitle" value={selectedInvitation.meetingTitle} />
               <input type="hidden" name="meetingNote" value={selectedInvitation.meetingNote} />
@@ -244,12 +359,29 @@ export function InvitationStatusList({
                 >
                   Close
                 </button>
-                <PendingSubmitButton
-                  pendingLabel="Saving..."
+                <button
+                  type="submit"
+                  disabled={pendingAction !== null}
                   className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
                 >
-                  Save new date
-                </PendingSubmitButton>
+                  <span className="inline-flex items-center gap-2">
+                    {pendingAction?.kind === "reschedule" &&
+                    pendingAction.invitationId === selectedInvitation.id ? (
+                      <motion.span
+                        aria-hidden="true"
+                        className="h-4 w-4 rounded-full border-2 border-current/25 border-t-current"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                      />
+                    ) : null}
+                    <span>
+                      {pendingAction?.kind === "reschedule" &&
+                      pendingAction.invitationId === selectedInvitation.id
+                        ? "Saving..."
+                        : "Save new date"}
+                    </span>
+                  </span>
+                </button>
               </div>
             </form>
           </div>

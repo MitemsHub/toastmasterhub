@@ -1,8 +1,5 @@
 import { InvitationResponseCard } from "@/components/public/invitation-response-card";
-import {
-  getInvitationConfirmationDetails,
-  respondToInvitation,
-} from "@/lib/invitations/response";
+import { getInvitationConfirmationDetails } from "@/lib/invitations/response";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
 
 type ConfirmationPageProps = {
@@ -13,11 +10,6 @@ type ConfirmationPageProps = {
 };
 
 type SavedResponse = "accepted" | "declined";
-type ConfirmationActionState = {
-  status: "idle" | "success" | "error";
-  response?: SavedResponse;
-  message?: string;
-};
 
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -42,39 +34,6 @@ export default async function ConfirmationPage({
       ? getSavedResponse(getSearchParamValue(resolvedSearchParams.response))
       : undefined;
   let invitation = null;
-
-  async function saveResponse(
-    _previousState: ConfirmationActionState,
-    formData: FormData,
-  ): Promise<ConfirmationActionState> {
-    "use server";
-
-    const token = resolvedParams.token;
-    const response =
-      formData.get("response") === "declined" ? "declined" : "accepted";
-
-    try {
-      const admin = await getAppwriteAdmin();
-      await respondToInvitation(admin, {
-        token,
-        response,
-      });
-
-      return {
-        status: "success",
-        response,
-        message:
-          response === "declined"
-            ? "Sorry, we will reschedule."
-            : "Thank you. Your availability has been saved.",
-      };
-    } catch {
-      return {
-        status: "error",
-        message: "This response could not be saved right now. Please try again.",
-      };
-    }
-  }
 
   try {
     const pb = await getAppwriteAdmin();
@@ -131,7 +90,6 @@ export default async function ConfirmationPage({
         <InvitationResponseCard
           invitation={invitation}
           token={resolvedParams.token}
-          action={saveResponse}
           initialState={{
             status: savedResponse ? "success" : "idle",
             response: savedResponse,

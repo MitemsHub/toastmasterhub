@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 import type { InvitationConfirmationDetails } from "@/lib/invitations/response";
-import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
 type InvitationResponseState = {
   status: "idle" | "success" | "error";
@@ -14,10 +15,6 @@ type InvitationResponseState = {
 type InvitationResponseCardProps = {
   invitation: InvitationConfirmationDetails;
   token: string;
-  action?: (
-    previousState: InvitationResponseState,
-    formData: FormData,
-  ) => InvitationResponseState | Promise<InvitationResponseState>;
   initialState?: InvitationResponseState;
 };
 
@@ -36,19 +33,70 @@ function getLockedResponseMessage(status: InvitationConfirmationDetails["status"
 export function InvitationResponseCard({
   invitation,
   token,
-  action,
   initialState = { status: "idle" },
 }: InvitationResponseCardProps) {
-  const [actionState, formAction] = useActionState(
-    action ?? (async (state: InvitationResponseState) => state),
-    initialState,
-  );
+  const router = useRouter();
+  const [actionState, setActionState] = useState(initialState);
+  const [pendingResponse, setPendingResponse] = useState<
+    Extract<InvitationConfirmationDetails["status"], "accepted" | "declined"> | null
+  >(null);
   const effectiveStatus =
     actionState.status === "success" && actionState.response
       ? actionState.response
       : invitation.status;
   const canRespond = invitation.canRespond && actionState.status !== "success";
   const feedbackMessage = actionState.message;
+
+  async function handleResponse(
+    response: Extract<InvitationConfirmationDetails["status"], "accepted" | "declined">,
+  ) {
+    setPendingResponse(response);
+    setActionState((current) => ({
+      ...current,
+      status: current.status === "success" ? current.status : "idle",
+      message: undefined,
+    }));
+
+    try {
+      const result = await fetch("/api/invitations/respond", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token,
+          response,
+        }),
+      });
+      const payload = (await result.json().catch(() => ({}))) as { message?: string };
+
+      if (!result.ok) {
+        throw new Error(payload.message || "This response could not be saved right now. Please try again.");
+      }
+
+      setActionState({
+        status: "success",
+        response,
+        message:
+          payload.message ??
+          (response === "declined"
+            ? "Sorry, we will reschedule."
+            : "Thank you. Your availability has been saved."),
+      });
+      router.replace(`/confirm/${encodeURIComponent(token)}?saved=1&response=${response}`);
+      router.refresh();
+    } catch (error) {
+      setActionState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "This response could not be saved right now. Please try again.",
+      });
+    } finally {
+      setPendingResponse(null);
+    }
+  }
 
   return (
     <section className="mx-auto w-full max-w-4xl overflow-hidden rounded-[1.8rem] border border-[#e6ddd1] bg-white p-6 text-zinc-950 shadow-[0_40px_120px_-70px_rgba(15,23,42,0.28)] sm:p-8">
@@ -109,25 +157,44 @@ export function InvitationResponseCard({
       ) : null}
 
       {canRespond ? (
-        <form action={formAction} className="mt-8 grid gap-3 sm:grid-cols-2">
-          <input type="hidden" name="token" value={token} />
-          <PendingSubmitButton
-            name="response"
-            value="accepted"
-            pendingLabel="Saving..."
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => void handleResponse("accepted")}
+            disabled={pendingResponse !== null}
             className="inline-flex h-12 items-center justify-center rounded-full bg-zinc-950 px-5 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
           >
-            Yes, I will
-          </PendingSubmitButton>
-          <PendingSubmitButton
-            name="response"
-            value="declined"
-            pendingLabel="Saving..."
+            <span className="inline-flex items-center gap-2">
+              {pendingResponse === "accepted" ? (
+                <motion.span
+                  aria-hidden="true"
+                  className="h-4 w-4 rounded-full border-2 border-current/25 border-t-current"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                />
+              ) : null}
+              <span>{pendingResponse === "accepted" ? "Saving..." : "Yes, I will"}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleResponse("declined")}
+            disabled={pendingResponse !== null}
             className="inline-flex h-12 items-center justify-center rounded-full border border-[#e6ddd1] bg-[#faf7f2] px-5 text-sm font-semibold text-zinc-700 hover:-translate-y-0.5 hover:border-zinc-300 hover:text-zinc-950"
           >
-            No, I won&apos;t
-          </PendingSubmitButton>
-        </form>
+            <span className="inline-flex items-center gap-2">
+              {pendingResponse === "declined" ? (
+                <motion.span
+                  aria-hidden="true"
+                  className="h-4 w-4 rounded-full border-2 border-current/25 border-t-current"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                />
+              ) : null}
+              <span>{pendingResponse === "declined" ? "Saving..." : "No, I won't"}</span>
+            </span>
+          </button>
+        </div>
       ) : (
         <div className="mt-8 space-y-3">
           <p className="rounded-[1.1rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 py-3 text-sm text-zinc-600">

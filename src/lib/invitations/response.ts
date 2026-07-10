@@ -82,11 +82,63 @@ export async function respondToInvitation(
   },
   now: () => string = () => new Date().toISOString(),
 ) {
+  // #region debug-point B:respond-start
+  await fetch("http://127.0.0.1:7777/event", {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: "confirm-reschedule-load",
+      runId: "pre-fix",
+      hypothesisId: "B",
+      location: "src/lib/invitations/response.ts:respondToInvitation:start",
+      msg: "[DEBUG] Starting invitation response mutation",
+      data: {
+        response: input.response,
+        tokenLength: input.token.length,
+      },
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   const record = await pb.collection("invitations").getFirstListItem<InvitationPendingRecord>(
     createInvitationTokenFilter(pb, input.token),
   );
 
+  // #region debug-point B:respond-record
+  await fetch("http://127.0.0.1:7777/event", {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: "confirm-reschedule-load",
+      runId: "pre-fix",
+      hypothesisId: "B",
+      location: "src/lib/invitations/response.ts:respondToInvitation:record",
+      msg: "[DEBUG] Loaded invitation record for response",
+      data: {
+        invitationId: record.id,
+        status: record.status,
+      },
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   if (record.status !== "pending") {
+    // #region debug-point B:respond-locked
+    await fetch("http://127.0.0.1:7777/event", {
+      method: "POST",
+      body: JSON.stringify({
+        sessionId: "confirm-reschedule-load",
+        runId: "pre-fix",
+        hypothesisId: "B",
+        location: "src/lib/invitations/response.ts:respondToInvitation:locked",
+        msg: "[DEBUG] Invitation response rejected because status is not pending",
+        data: {
+          invitationId: record.id,
+          status: record.status,
+        },
+        ts: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     throw new Error("This invitation has already been responded to.");
   }
 
@@ -94,4 +146,22 @@ export async function respondToInvitation(
     status: input.response,
     responded_at: now(),
   });
+
+  // #region debug-point B:respond-success
+  await fetch("http://127.0.0.1:7777/event", {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: "confirm-reschedule-load",
+      runId: "pre-fix",
+      hypothesisId: "B",
+      location: "src/lib/invitations/response.ts:respondToInvitation:success",
+      msg: "[DEBUG] Invitation response mutation completed",
+      data: {
+        invitationId: record.id,
+        response: input.response,
+      },
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 }

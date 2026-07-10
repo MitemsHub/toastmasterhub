@@ -1,12 +1,8 @@
 import { cookies } from "next/headers";
 import { InvitationStatusList } from "@/components/admin/invitations/invitation-status-list";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
-import { getEnv } from "@/lib/config";
-import { createMailTransport } from "@/lib/email/transport";
 import { redirect } from "@/lib/next/navigation";
 import { listInvitationStatusItems, summarizeInvitationStatuses } from "@/lib/invitations/service";
-import { cancelInvitation, rescheduleInvitation } from "@/lib/invitations/workflow";
-import { getAppBaseUrl } from "@/lib/runtime/app-url";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
@@ -47,84 +43,6 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
     getSearchParamValue(resolvedSearchParams.error) === "invalid-invitation"
       ? "We could not save that new date. Please review it and try again."
       : undefined;
-
-  async function updateInvitation(formData: FormData) {
-    "use server";
-
-    const currentEnv = getEnv();
-    const admin = await getAppwriteAdmin();
-    const nextCookieStore = await cookies();
-    const currentVpe = await getAuthenticatedVpe(
-      admin,
-      nextCookieStore.get(VPE_SESSION_COOKIE)?.value,
-    );
-
-    if (!currentVpe) {
-      redirect("/login?next=%2Fadmin%2Finvitations");
-    }
-
-    try {
-      const transporter = createMailTransport();
-
-      await rescheduleInvitation(
-        admin,
-        transporter,
-        {
-          fromAddress: currentEnv.SMTP_FROM,
-          appBaseUrl: await getAppBaseUrl(),
-        },
-        {
-          vpeId: currentVpe.id,
-          vpeName: currentVpe.name,
-        },
-        formData,
-      );
-    } catch (error) {
-      console.error("Failed to reschedule evaluator confirmation.", error);
-      const invitationId =
-        typeof formData.get("invitationId") === "string"
-          ? String(formData.get("invitationId"))
-          : "";
-      redirect(
-        `/admin/invitations?edit=${encodeURIComponent(invitationId)}&status=${encodeURIComponent(activeFilter)}&error=invalid-invitation`,
-      );
-    }
-
-    redirect(`/admin/invitations?updated=1&status=${encodeURIComponent(activeFilter)}`);
-  }
-
-  async function removeInvitation(formData: FormData) {
-    "use server";
-
-    const invitationId =
-      typeof formData.get("invitationId") === "string" ? String(formData.get("invitationId")) : "";
-    const admin = await getAppwriteAdmin();
-    const nextCookieStore = await cookies();
-    const currentVpe = await getAuthenticatedVpe(
-      admin,
-      nextCookieStore.get(VPE_SESSION_COOKIE)?.value,
-    );
-
-    if (!currentVpe) {
-      redirect("/login?next=%2Fadmin%2Finvitations");
-    }
-
-    try {
-      await cancelInvitation(
-        admin,
-        {
-          vpeId: currentVpe.id,
-          vpeName: currentVpe.name,
-        },
-        invitationId,
-      );
-    } catch (error) {
-      console.error("Failed to cancel evaluator confirmation.", error);
-      redirect(`/admin/invitations?status=${encodeURIComponent(activeFilter)}`);
-    }
-
-    redirect(`/admin/invitations?status=${encodeURIComponent(activeFilter)}`);
-  }
 
   const cookieStore = await cookies();
   const pb = await getAppwriteAdmin();
@@ -189,11 +107,9 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
 
       <InvitationStatusList
         activeFilter={activeFilter}
-        cancelAction={removeInvitation}
         errorMessage={errorMessage}
         initialOpenInvitationId={selectedInvitationId}
         invitations={filteredInvitations}
-        rescheduleAction={updateInvitation}
         successMessage={successMessage}
       />
     </div>
