@@ -2,12 +2,12 @@ import nodemailer from "nodemailer";
 import { cookies } from "next/headers";
 import { EvaluatorDirectory } from "@/components/admin/evaluators/evaluator-directory";
 import { EvaluatorForm } from "@/components/admin/evaluators/evaluator-form";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { listEvaluatorDirectoryItems } from "@/lib/evaluators/service";
 import { createConfirmationRequest } from "@/lib/invitations/workflow";
 import { getEnv } from "@/lib/config";
 import { redirect } from "@/lib/next/navigation";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
 type EvaluatorsPageProps = {
@@ -33,7 +33,7 @@ export default async function EvaluatorsPage({ searchParams }: EvaluatorsPagePro
     "use server";
 
     const currentEnv = getEnv();
-    const admin = await getPocketBaseAdmin();
+    const admin = await getAppwriteAdmin();
     const nextCookieStore = await cookies();
     const currentVpe = await getAuthenticatedVpe(
       admin,
@@ -77,7 +77,7 @@ export default async function EvaluatorsPage({ searchParams }: EvaluatorsPagePro
   }
 
   const cookieStore = await cookies();
-  const pb = await getPocketBaseAdmin();
+  const pb = await getAppwriteAdmin();
   const vpe = await getAuthenticatedVpe(pb, cookieStore.get(VPE_SESSION_COOKIE)?.value);
 
   if (!vpe) {

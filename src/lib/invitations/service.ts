@@ -1,4 +1,4 @@
-import type PocketBase from "pocketbase";
+import type { BackendClient } from "@/lib/appwrite/client";
 import type { InvitationRecord, InvitationStatus } from "@/lib/types";
 
 export type InvitationStatusItem = {
@@ -15,7 +15,7 @@ export type InvitationStatusItem = {
   respondedAt?: string;
 };
 
-type InvitationStoreClient = Pick<PocketBase, "collection" | "files" | "filter">;
+type InvitationStoreClient = Pick<BackendClient, "collection" | "files" | "filter">;
 
 type InvitationRecordWithExpand = Pick<
   InvitationRecord,
@@ -32,7 +32,7 @@ type InvitationRecordWithExpand = Pick<
 };
 
 function createInvitationScopeFilter(
-  pb: Pick<PocketBase, "filter">,
+  pb: Pick<BackendClient, "filter">,
   vpeId: string,
   status?: InvitationStatus,
 ) {
@@ -43,7 +43,7 @@ function createInvitationScopeFilter(
   return pb.filter("vpe = {:vpeId} && status = {:status}", { vpeId, status });
 }
 
-function isRecoverablePocketBaseListError(error: unknown) {
+function isRecoverableBackendListError(error: unknown) {
   return typeof error === "object" && error !== null && "status" in error && (
     error.status === 400 || error.status === 404
   );
@@ -84,7 +84,7 @@ export async function listInvitationStatusItems(
   try {
     records = await getInvitationRecords(pb, vpeId, status);
   } catch (error) {
-    if (!isRecoverablePocketBaseListError(error)) {
+    if (!isRecoverableBackendListError(error)) {
       throw error;
     }
   }

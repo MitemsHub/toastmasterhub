@@ -1,4 +1,4 @@
-import type PocketBase from "pocketbase";
+import type { BackendClient } from "@/lib/appwrite/client";
 import type { EvaluatorRecord } from "@/lib/types";
 import { evaluatorSchema } from "@/lib/validation/evaluator";
 
@@ -11,10 +11,10 @@ type EvaluatorDirectoryItem = {
   createdAt: string;
 };
 
-type EvaluatorDirectoryClient = Pick<PocketBase, "collection" | "files" | "filter">;
-type EvaluatorCreateClient = Pick<PocketBase, "collection">;
+type EvaluatorDirectoryClient = Pick<BackendClient, "collection" | "files" | "filter">;
+type EvaluatorCreateClient = Pick<BackendClient, "collection">;
 
-function isRecoverablePocketBaseListError(error: unknown) {
+function isRecoverableBackendListError(error: unknown) {
   return typeof error === "object" && error !== null && "status" in error && (
     error.status === 400 || error.status === 404
   );
@@ -67,7 +67,7 @@ export async function listEvaluatorDirectoryItems(
   try {
     records = await getEvaluatorRecords(pb, vpeId);
   } catch (error) {
-    if (!isRecoverablePocketBaseListError(error)) {
+    if (!isRecoverableBackendListError(error)) {
       throw error;
     }
   }

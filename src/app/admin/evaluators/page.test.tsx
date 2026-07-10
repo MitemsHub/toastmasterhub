@@ -1,9 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import EvaluatorsPage from "./page";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getEnv } from "@/lib/config";
 import { listEvaluatorDirectoryItems } from "@/lib/evaluators/service";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
 vi.mock("next/headers", () => ({
@@ -24,8 +24,8 @@ vi.mock("@/lib/config", () => ({
   getEnv: vi.fn(),
 }));
 
-vi.mock("@/lib/pocketbase/client", () => ({
-  getPocketBaseAdmin: vi.fn(),
+vi.mock("@/lib/appwrite/client", () => ({
+  getAppwriteAdmin: vi.fn(),
 }));
 
 vi.mock("@/lib/vpe/service", () => ({
@@ -37,16 +37,22 @@ describe("EvaluatorsPage", () => {
     vi.mocked(listEvaluatorDirectoryItems).mockReset();
     vi.mocked(getAuthenticatedVpe).mockReset();
     vi.mocked(getEnv).mockReset();
-    vi.mocked(getPocketBaseAdmin).mockReset();
+    vi.mocked(getAppwriteAdmin).mockReset();
     vi.mocked(getEnv).mockReturnValue({
-      POCKETBASE_URL: "http://127.0.0.1:8090",
-      POCKETBASE_ADMIN_EMAIL: "admin@example.com",
-      POCKETBASE_ADMIN_PASSWORD: "super-secret-password",
+      APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
+      APPWRITE_PROJECT_ID: "toastmasters-hub",
+      APPWRITE_API_KEY: "secret-api-key",
+      APPWRITE_DATABASE_ID: "main",
+      APPWRITE_VPES_COLLECTION_ID: "vpes",
+      APPWRITE_EVALUATORS_COLLECTION_ID: "evaluators",
+      APPWRITE_INVITATIONS_COLLECTION_ID: "invitations",
+      APPWRITE_STORAGE_BUCKET_ID: "evaluator-photos",
       SMTP_HOST: "smtp.gmail.com",
       SMTP_PORT: 587,
       SMTP_USER: "club@example.com",
       SMTP_PASS: "app-password",
       SMTP_FROM: "club@example.com",
+      VPE_SIGNUP_OTC: "TMH-ABUJA-2026",
       APP_BASE_URL: "http://localhost:3000",
     });
     vi.mocked(getAuthenticatedVpe).mockResolvedValue({
@@ -58,7 +64,7 @@ describe("EvaluatorsPage", () => {
   });
 
   it("loads VPE-scoped evaluators and shows a success message after sending", async () => {
-    vi.mocked(getPocketBaseAdmin).mockResolvedValue({} as never);
+    vi.mocked(getAppwriteAdmin).mockResolvedValue({} as never);
     vi.mocked(listEvaluatorDirectoryItems).mockResolvedValue([
       {
         id: "eva_1",
@@ -89,7 +95,7 @@ describe("EvaluatorsPage", () => {
   });
 
   it("lets the admin layout handle backend outages", async () => {
-    vi.mocked(getPocketBaseAdmin).mockRejectedValue(new Error("connect ECONNREFUSED 127.0.0.1:8090"));
+    vi.mocked(getAppwriteAdmin).mockRejectedValue(new Error("connect ECONNREFUSED appwrite"));
 
     await expect(
       EvaluatorsPage({ searchParams: Promise.resolve({}) }),

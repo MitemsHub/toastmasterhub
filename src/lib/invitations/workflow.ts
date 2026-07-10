@@ -1,10 +1,10 @@
-import type PocketBase from "pocketbase";
+import type { BackendClient } from "@/lib/appwrite/client";
 import { createEvaluatorProfile } from "@/lib/evaluators/service";
 import { invitationSchema } from "@/lib/validation/invitation";
 import { sendInvitationEmail } from "./email";
 import { createInvitationToken } from "./token";
 
-type DeliveryStoreClient = Pick<PocketBase, "collection" | "filter">;
+type DeliveryStoreClient = Pick<BackendClient, "collection" | "filter">;
 
 type DeliveryTransport = {
   sendMail: (message: {

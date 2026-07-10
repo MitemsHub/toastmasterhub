@@ -3,8 +3,8 @@ import { LandingPage } from "@/components/home/landing-page";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createVpeSessionValue, VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getEnv } from "@/lib/config";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 import {
   authenticateVpeWithAccessCode,
   createOrRefreshVpeAccess,
@@ -63,7 +63,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     const safeNextPath = normalizeNextPath(requestedNextPath);
 
     try {
-      const pb = await getPocketBaseAdmin();
+      const pb = await getAppwriteAdmin();
       const vpe = await authenticateVpeWithAccessCode(pb, accessCode);
 
       if (!vpe) {
@@ -99,7 +99,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
     try {
       const env = getEnv();
-      const pb = await getPocketBaseAdmin();
+      const pb = await getAppwriteAdmin();
       const transporter = nodemailer.createTransport({
         host: env.SMTP_HOST,
         port: env.SMTP_PORT,

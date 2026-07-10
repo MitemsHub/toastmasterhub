@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ConfirmationPage from "./page";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getInvitationConfirmationDetails } from "@/lib/invitations/response";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 
 vi.mock("@/lib/next/navigation", () => ({
   redirect: vi.fn(),
@@ -12,18 +12,18 @@ vi.mock("@/lib/invitations/response", () => ({
   getInvitationConfirmationDetails: vi.fn(),
 }));
 
-vi.mock("@/lib/pocketbase/client", () => ({
-  getPocketBaseAdmin: vi.fn(),
+vi.mock("@/lib/appwrite/client", () => ({
+  getAppwriteAdmin: vi.fn(),
 }));
 
 describe("ConfirmationPage", () => {
   beforeEach(() => {
     vi.mocked(getInvitationConfirmationDetails).mockReset();
-    vi.mocked(getPocketBaseAdmin).mockReset();
+    vi.mocked(getAppwriteAdmin).mockReset();
   });
 
   it("loads the public invitation details for a valid token", async () => {
-    vi.mocked(getPocketBaseAdmin).mockResolvedValue({} as never);
+    vi.mocked(getAppwriteAdmin).mockResolvedValue({} as never);
     vi.mocked(getInvitationConfirmationDetails).mockResolvedValue({
       invitationId: "inv_1",
       evaluatorName: "Amina Bello",

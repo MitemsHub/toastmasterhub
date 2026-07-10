@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminOfflineState } from "@/components/admin/admin-offline-state";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getEnv } from "@/lib/config";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   let isOffline = false;
 
   try {
-    const pb = await getPocketBaseAdmin();
+    const pb = await getAppwriteAdmin();
     vpe = await getAuthenticatedVpe(pb, sessionValue);
   } catch (error) {
     console.error("Failed to load admin layout session.", error);
@@ -44,9 +44,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <main className="min-h-screen bg-[linear-gradient(180deg,#faf7f2_0%,#f3eee7_100%)] px-6 py-10 sm:px-10 lg:px-12">
         <div className="mx-auto max-w-5xl">
           <AdminOfflineState
-            title="Finish PocketBase setup before opening the VPE workspace"
-            description="Toast Masters Hub could not reach PocketBase while checking your session. Start the backend and confirm the required collections before returning to the dashboard."
-            baseUrl={getEnv().POCKETBASE_URL}
+            title="Finish Appwrite setup before opening the VPE workspace"
+            description="Toast Masters Hub could not reach Appwrite while checking your session. Confirm the project, database, collections, bucket, and server key before returning to the dashboard."
+            baseUrl={getEnv().APPWRITE_ENDPOINT}
           />
         </div>
       </main>

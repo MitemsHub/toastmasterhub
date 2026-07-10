@@ -1,4 +1,4 @@
-import type PocketBase from "pocketbase";
+import type { BackendClient } from "@/lib/appwrite/client";
 import type { InvitationStatus } from "@/lib/types";
 import { hashInvitationToken } from "./token";
 
@@ -14,8 +14,8 @@ export type InvitationConfirmationDetails = {
   canRespond: boolean;
 };
 
-type InvitationResponseClient = Pick<PocketBase, "collection" | "filter" | "files">;
-type InvitationMutationClient = Pick<PocketBase, "collection" | "filter">;
+type InvitationResponseClient = Pick<BackendClient, "collection" | "filter" | "files">;
+type InvitationMutationClient = Pick<BackendClient, "collection" | "filter">;
 
 type InvitationLookupRecord = {
   id: string;
@@ -37,7 +37,7 @@ type InvitationPendingRecord = {
   status: InvitationStatus;
 };
 
-function createInvitationTokenFilter(pb: Pick<PocketBase, "filter">, token: string) {
+function createInvitationTokenFilter(pb: Pick<BackendClient, "filter">, token: string) {
   return pb.filter("token_hash = {:tokenHash}", {
     tokenHash: hashInvitationToken(token),
   });

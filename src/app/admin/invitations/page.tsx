@@ -1,12 +1,12 @@
 import nodemailer from "nodemailer";
 import { cookies } from "next/headers";
 import { InvitationStatusList } from "@/components/admin/invitations/invitation-status-list";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getEnv } from "@/lib/config";
 import { redirect } from "@/lib/next/navigation";
 import { listInvitationStatusItems, summarizeInvitationStatuses } from "@/lib/invitations/service";
 import { cancelInvitation, rescheduleInvitation } from "@/lib/invitations/workflow";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
 type InvitationsPageProps = {
@@ -51,7 +51,7 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
     "use server";
 
     const currentEnv = getEnv();
-    const admin = await getPocketBaseAdmin();
+    const admin = await getAppwriteAdmin();
     const nextCookieStore = await cookies();
     const currentVpe = await getAuthenticatedVpe(
       admin,
@@ -105,7 +105,7 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
 
     const invitationId =
       typeof formData.get("invitationId") === "string" ? String(formData.get("invitationId")) : "";
-    const admin = await getPocketBaseAdmin();
+    const admin = await getAppwriteAdmin();
     const nextCookieStore = await cookies();
     const currentVpe = await getAuthenticatedVpe(
       admin,
@@ -134,7 +134,7 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
   }
 
   const cookieStore = await cookies();
-  const pb = await getPocketBaseAdmin();
+  const pb = await getAppwriteAdmin();
   const vpe = await getAuthenticatedVpe(pb, cookieStore.get(VPE_SESSION_COOKIE)?.value);
 
   if (!vpe) {

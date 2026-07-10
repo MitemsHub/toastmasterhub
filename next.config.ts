@@ -1,3 +1,25 @@
+function getAppwriteRemotePattern() {
+  const appwriteEndpoint = process.env.APPWRITE_ENDPOINT;
+
+  if (!appwriteEndpoint) {
+    return null;
+  }
+
+  try {
+    const url = new URL(appwriteEndpoint);
+
+    return {
+      protocol: url.protocol.replace(":", ""),
+      hostname: url.hostname,
+      ...(url.port ? { port: url.port } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const appwriteRemotePattern = getAppwriteRemotePattern();
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -5,16 +27,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        port: "8090",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "8090",
-      },
+      ...(appwriteRemotePattern ? [appwriteRemotePattern] : []),
     ],
   },
 };

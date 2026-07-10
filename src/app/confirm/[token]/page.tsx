@@ -3,8 +3,8 @@ import {
   getInvitationConfirmationDetails,
   respondToInvitation,
 } from "@/lib/invitations/response";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { redirect } from "@/lib/next/navigation";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 
 type ConfirmationPageProps = {
   params: Promise<{
@@ -39,7 +39,7 @@ export default async function ConfirmationPage({
       formData.get("response") === "declined" ? "declined" : "accepted";
 
     try {
-      const admin = await getPocketBaseAdmin();
+      const admin = await getAppwriteAdmin();
       await respondToInvitation(admin, {
         token,
         response,
@@ -52,7 +52,7 @@ export default async function ConfirmationPage({
   }
 
   try {
-    const pb = await getPocketBaseAdmin();
+    const pb = await getAppwriteAdmin();
     invitation = await getInvitationConfirmationDetails(pb, resolvedParams.token);
   } catch {
     invitation = null;

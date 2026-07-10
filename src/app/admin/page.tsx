@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { Reveal } from "@/components/motion/reveal";
+import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { summarizeInvitationStatuses, listInvitationStatusItems } from "@/lib/invitations/service";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
-import { getPocketBaseAdmin } from "@/lib/pocketbase/client";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
 const quickLinks = [
@@ -22,7 +22,7 @@ export default async function AdminPage() {
   const cookieStore = await cookies();
   let vpeName = "";
   let summary = { pending: 0, confirmed: 0, declined: 0 };
-  const pb = await getPocketBaseAdmin();
+  const pb = await getAppwriteAdmin();
   const vpe = await getAuthenticatedVpe(pb, cookieStore.get(VPE_SESSION_COOKIE)?.value);
 
   if (!vpe) {

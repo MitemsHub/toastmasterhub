@@ -1,11 +1,11 @@
 import { randomBytes } from "node:crypto";
-import type PocketBase from "pocketbase";
+import type { BackendClient } from "@/lib/appwrite/client";
 import { isValidVpeSession, parseVpeSessionValue, hashAccessCode } from "@/lib/auth/vpe-session";
 import type { VpeRecord } from "@/lib/types";
 import { accessCodeSchema, vpeSignupSchema } from "@/lib/validation/vpe";
 import { sendVpeAccessCodeEmail } from "./email";
 
-type VpeClient = Pick<PocketBase, "collection" | "filter">;
+type VpeClient = Pick<BackendClient, "collection" | "filter">;
 
 type DeliveryTransport = {
   sendMail: (message: {
