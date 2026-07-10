@@ -25,18 +25,51 @@ export function LandingPage({
   initialMode = "login",
 }: LandingPageProps) {
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
+  const [dismissedFlashKey, setDismissedFlashKey] = useState("");
+
+  const signupSuccessKey = signupSuccessMessage ? `success:${signupSuccessMessage}` : "";
+  const signupErrorKey = signupErrorMessage ? `error:${signupErrorMessage}` : "";
+  const showSignupSuccess = Boolean(signupSuccessMessage) && dismissedFlashKey !== signupSuccessKey;
+  const showSignupError = Boolean(signupErrorMessage) && dismissedFlashKey !== signupErrorKey;
+
+  function clearSignupFlashParams() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+
+    url.searchParams.delete("sent");
+    url.searchParams.delete("error");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }
 
   useEffect(() => {
-    if (!signupSuccessMessage || mode !== "signup") {
+    if (!showSignupSuccess || mode !== "signup" || !signupSuccessKey) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
+      setDismissedFlashKey(signupSuccessKey);
+      clearSignupFlashParams();
       setMode("login");
     }, 3500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [mode, signupSuccessMessage]);
+  }, [mode, showSignupSuccess, signupSuccessKey]);
+
+  useEffect(() => {
+    if (!showSignupError || mode !== "signup" || !signupErrorKey) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDismissedFlashKey(signupErrorKey);
+      clearSignupFlashParams();
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [mode, showSignupError, signupErrorKey]);
 
   return (
     <main className="overflow-hidden bg-[linear-gradient(180deg,#f8f4ee_0%,#f2eee8_100%)]">
@@ -257,13 +290,13 @@ export function LandingPage({
                           />
                         </label>
 
-                        {signupErrorMessage ? (
+                        {signupErrorMessage && showSignupError ? (
                           <p className="mt-3 rounded-[1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900 shadow-[0_16px_40px_-30px_rgba(190,24,93,0.35)]">
                             {signupErrorMessage}
                           </p>
                         ) : null}
 
-                        {signupSuccessMessage ? (
+                        {signupSuccessMessage && showSignupSuccess ? (
                           <p className="mt-3 rounded-[1rem] border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 shadow-[0_16px_40px_-30px_rgba(5,150,105,0.45)]">
                             {signupSuccessMessage}
                           </p>

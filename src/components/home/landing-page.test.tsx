@@ -40,6 +40,7 @@ describe("LandingPage", () => {
 
   it("returns to the login form after showing the signup success message", () => {
     vi.useFakeTimers();
+    const replaceStateSpy = vi.spyOn(window.history, "replaceState");
 
     render(
       <LandingPage
@@ -64,5 +65,28 @@ describe("LandingPage", () => {
       "true",
     );
     expect(screen.getByLabelText(/access code/i)).toBeInTheDocument();
+    expect(replaceStateSpy).toHaveBeenCalled();
+  });
+
+  it("clears the signup error banner after a short delay", () => {
+    vi.useFakeTimers();
+    const replaceStateSpy = vi.spyOn(window.history, "replaceState");
+
+    render(
+      <LandingPage
+        initialMode="signup"
+        signupErrorMessage="We could not send the access code. Please confirm your details and try again."
+      />,
+    );
+
+    expect(screen.getByText(/we could not send the access code/i)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(3500);
+    });
+
+    expect(screen.queryByText(/we could not send the access code/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /send access code/i })).toBeInTheDocument();
+    expect(replaceStateSpy).toHaveBeenCalled();
   });
 });
