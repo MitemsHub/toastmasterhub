@@ -6,7 +6,7 @@ import { Reveal } from "@/components/motion/reveal";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
-  { href: "/admin/evaluators", label: "Create evaluator" },
+  { href: "/admin/evaluators", label: "Manage evaluators" },
   { href: "/admin/invitations", label: "View confirmations" },
 ];
 

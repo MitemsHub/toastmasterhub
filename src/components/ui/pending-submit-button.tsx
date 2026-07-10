@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { MouseEventHandler } from "react";
 import { motion } from "motion/react";
 import { useFormStatus } from "react-dom";
 
@@ -10,6 +11,7 @@ type PendingSubmitButtonProps = {
   pendingLabel?: string;
   name?: string;
   value?: string;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
 };
 
 export function PendingSubmitButton({
@@ -18,6 +20,7 @@ export function PendingSubmitButton({
   pendingLabel,
   name,
   value,
+  onClick,
 }: PendingSubmitButtonProps) {
   const { pending, data } = useFormStatus();
   const isCurrentAction =
@@ -34,6 +37,7 @@ export function PendingSubmitButton({
       value={value}
       disabled={pending}
       aria-disabled={pending}
+      onClick={onClick}
       className={`${className} disabled:cursor-wait disabled:opacity-90`}
     >
       <span className="inline-flex items-center gap-2">

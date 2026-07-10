@@ -21,6 +21,7 @@ export type EvaluatorRecord = {
   vpe: string;
   full_name: string;
   email: string;
+  phone: string;
   profile: string;
   photo: string;
 };

@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { createEvaluatorProfile, listEvaluatorDirectoryItems } from "./service";
+import {
+  createEvaluatorProfile,
+  DuplicateEvaluatorError,
+  listEvaluatorDirectoryItems,
+} from "./service";
 
 describe("listEvaluatorDirectoryItems", () => {
-  it("maps PocketBase evaluator records into photo-first directory items", async () => {
+  it("maps shared evaluator records into directory items", async () => {
     const getFullList = vi.fn().mockResolvedValue([
       {
         id: "eva_1",
@@ -10,8 +14,10 @@ describe("listEvaluatorDirectoryItems", () => {
         collectionName: "evaluators",
         created: "2026-07-06T00:00:00.000Z",
         updated: "2026-07-06T00:00:00.000Z",
+        vpe: "vpe_1",
         full_name: "Amina Bello",
         email: "amina@example.com",
+        phone: "+2348012345678",
         profile: "Warm evaluator who gives direct and practical feedback.",
         photo: "amina.jpg",
       },
@@ -21,14 +27,12 @@ describe("listEvaluatorDirectoryItems", () => {
       collection: () => ({
         getFullList,
       }),
-      filter: vi.fn().mockReturnValue("vpe = 'vpe_1'"),
       files: {
         getURL: () => "https://example.com/amina.jpg",
       },
-    } as never, "vpe_1");
+    } as never);
 
     expect(getFullList).toHaveBeenCalledWith({
-      filter: "vpe = 'vpe_1'",
       sort: "-created",
     });
     expect(result).toEqual([
@@ -36,14 +40,16 @@ describe("listEvaluatorDirectoryItems", () => {
         id: "eva_1",
         name: "Amina Bello",
         email: "amina@example.com",
+        phone: "+2348012345678",
         profile: "Warm evaluator who gives direct and practical feedback.",
         photoUrl: "https://example.com/amina.jpg",
         createdAt: "2026-07-06T00:00:00.000Z",
+        createdByVpeId: "vpe_1",
       },
     ]);
   });
 
-  it("retries without created sorting when PocketBase rejects that field", async () => {
+  it("retries without created sorting when the backend rejects that field", async () => {
     const getFullList = vi
       .fn()
       .mockRejectedValueOnce({ status: 400 })
@@ -52,8 +58,10 @@ describe("listEvaluatorDirectoryItems", () => {
           id: "eva_1",
           collectionId: "collection",
           collectionName: "evaluators",
+          vpe: "vpe_1",
           full_name: "Amina Bello",
           email: "amina@example.com",
+          phone: "+2348012345678",
           profile: "Warm evaluator who gives direct and practical feedback.",
           photo: "amina.jpg",
         },
@@ -63,56 +71,40 @@ describe("listEvaluatorDirectoryItems", () => {
       collection: () => ({
         getFullList,
       }),
-      filter: vi.fn().mockReturnValue("vpe = 'vpe_1'"),
       files: {
         getURL: () => "https://example.com/amina.jpg",
       },
-    } as never, "vpe_1");
+    } as never);
 
     expect(getFullList).toHaveBeenNthCalledWith(1, {
-      filter: "vpe = 'vpe_1'",
       sort: "-created",
     });
-    expect(getFullList).toHaveBeenNthCalledWith(2, {
-      filter: "vpe = 'vpe_1'",
-    });
+    expect(getFullList).toHaveBeenNthCalledWith(2, {});
     expect(result).toEqual([
       {
         id: "eva_1",
         name: "Amina Bello",
         email: "amina@example.com",
+        phone: "+2348012345678",
         profile: "Warm evaluator who gives direct and practical feedback.",
         photoUrl: "https://example.com/amina.jpg",
         createdAt: "",
+        createdByVpeId: "vpe_1",
       },
     ]);
-  });
-
-  it("returns an empty list when PocketBase responds with a recoverable list error", async () => {
-    const getFullList = vi.fn().mockRejectedValue({ status: 400 });
-
-    const result = await listEvaluatorDirectoryItems({
-      collection: () => ({
-        getFullList,
-      }),
-      filter: vi.fn().mockReturnValue("vpe = 'vpe_1'"),
-      files: {
-        getURL: () => "https://example.com/amina.jpg",
-      },
-    } as never, "vpe_1");
-
-    expect(result).toEqual([]);
   });
 });
 
 describe("createEvaluatorProfile", () => {
-  it("validates the submitted form data and creates a PocketBase evaluator record", async () => {
+  it("validates the submitted form data and creates a shared evaluator record", async () => {
     const create = vi.fn().mockResolvedValue({ id: "eva_1" });
+    const getFirstListItem = vi.fn().mockRejectedValue({ status: 404 });
     const photo = new File(["photo"], "amina.jpg", { type: "image/jpeg" });
     const formData = new FormData();
 
     formData.set("fullName", "Amina Bello");
     formData.set("email", "amina@example.com");
+    formData.set("phone", "+2348012345678");
     formData.set("profile", "Warm evaluator who gives direct and practical feedback.");
     formData.set("photo", photo);
 
@@ -120,7 +112,9 @@ describe("createEvaluatorProfile", () => {
       {
         collection: () => ({
           create,
+          getFirstListItem,
         }),
+        filter: vi.fn().mockReturnValue("email-filter"),
       },
       formData,
       "vpe_1",
@@ -130,28 +124,36 @@ describe("createEvaluatorProfile", () => {
       vpe: "vpe_1",
       full_name: "Amina Bello",
       email: "amina@example.com",
+      phone: "+2348012345678",
       profile: "Warm evaluator who gives direct and practical feedback.",
       photo,
     });
   });
 
-  it("rejects a submission without a photo file", async () => {
+  it("rejects a submission when the evaluator email already exists", async () => {
+    const photo = new File(["photo"], "amina.jpg", { type: "image/jpeg" });
     const formData = new FormData();
 
     formData.set("fullName", "Amina Bello");
     formData.set("email", "amina@example.com");
+    formData.set("phone", "+2348012345678");
     formData.set("profile", "Warm evaluator who gives direct and practical feedback.");
+    formData.set("photo", photo);
 
     await expect(
       createEvaluatorProfile(
         {
           collection: () => ({
             create: vi.fn(),
+            getFirstListItem: vi.fn().mockResolvedValue({
+              id: "eva_existing",
+            }),
           }),
-        },
+          filter: vi.fn().mockReturnValue("email-filter"),
+        } as never,
         formData,
         "vpe_1",
       ),
-    ).rejects.toThrow();
+    ).rejects.toBeInstanceOf(DuplicateEvaluatorError);
   });
 });

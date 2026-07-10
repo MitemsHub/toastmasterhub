@@ -52,20 +52,23 @@ describe("EvaluatorsPage", () => {
       id: "vpe_1",
       name: "Amina Bello",
       email: "amina@example.com",
+      phone: "+2348012345678",
       accessCodeHash: "hash",
     });
   });
 
-  it("loads VPE-scoped evaluators and shows a success message after sending", async () => {
+  it("loads shared evaluators and shows a success message after sending", async () => {
     vi.mocked(getAppwriteAdmin).mockResolvedValue({} as never);
     vi.mocked(listEvaluatorDirectoryItems).mockResolvedValue([
       {
         id: "eva_1",
         name: "Amina Bello",
         email: "amina@example.com",
+        phone: "+2348012345678",
         profile: "Warm evaluator who gives direct and practical feedback.",
         photoUrl: "https://example.com/amina.jpg",
         createdAt: "2026-08-01T10:00:00.000Z",
+        createdByVpeId: "vpe_1",
       },
     ]);
 
@@ -77,10 +80,11 @@ describe("EvaluatorsPage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /create the request and send it once/i,
+        name: /choose a shared evaluator and send the request/i,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Amina Bello")).toBeInTheDocument();
+    expect(screen.getByText("+2348012345678")).toBeInTheDocument();
     expect(screen.getByText(/confirmation sent\./i)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Amina Bello" }).getAttribute("src")).toContain(
       encodeURIComponent("https://example.com/amina.jpg"),

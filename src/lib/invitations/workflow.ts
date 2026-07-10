@@ -1,6 +1,6 @@
 import type { BackendClient } from "@/lib/appwrite/client";
-import { createEvaluatorProfile } from "@/lib/evaluators/service";
-import type { InvitationRecord } from "@/lib/types";
+import { getEvaluatorById } from "@/lib/evaluators/service";
+import type { EvaluatorRecord, InvitationRecord } from "@/lib/types";
 import { invitationSchema } from "@/lib/validation/invitation";
 import { sendInvitationEmail } from "./email";
 import { createInvitationToken } from "./token";
@@ -24,6 +24,7 @@ type DeliveryContext = {
 
 type InvitationEditableRecord = {
   id: string;
+  evaluator: string;
   meeting_title: string;
   meeting_date: string;
   meeting_note?: string;
@@ -39,6 +40,15 @@ type InvitationEditableRecord = {
   };
 };
 
+type InvitationConflictRecord = Pick<InvitationRecord, "id" | "status" | "vpe">;
+
+export class EvaluatorDateConflictError extends Error {
+  constructor(message = "That evaluator is already booked for this meeting date.") {
+    super(message);
+    this.name = "EvaluatorDateConflictError";
+  }
+}
+
 function getStringValue(formData: FormData, key: string) {
   const value = formData.get(key);
 
@@ -50,6 +60,26 @@ function getInvitationId(formData: FormData) {
 
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("Invitation id is required.");
+  }
+
+  return value;
+}
+
+function getEvaluatorId(formData: FormData) {
+  const value = formData.get("evaluatorId");
+
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error("Evaluator id is required.");
+  }
+
+  return value;
+}
+
+function getOptionalPhoto(formData: FormData) {
+  const value = formData.get("photo");
+
+  if (!(value instanceof File) || !value.name) {
+    return null;
   }
 
   return value;
@@ -79,6 +109,28 @@ async function getScopedInvitation(
   );
 }
 
+async function assertEvaluatorAvailability(
+  pb: DeliveryStoreClient,
+  evaluatorId: string,
+  meetingDate: string,
+  currentInvitationId?: string,
+) {
+  const existingInvitations = await pb.collection("invitations").getFullList<InvitationConflictRecord>({
+    filter: pb.filter("evaluator = {:evaluatorId} && meeting_date = {:meetingDate}", {
+      evaluatorId,
+      meetingDate,
+    }),
+  });
+
+  const conflictingInvitation = existingInvitations.find(
+    (record) => record.id !== currentInvitationId && record.status !== "declined",
+  );
+
+  if (conflictingInvitation) {
+    throw new EvaluatorDateConflictError();
+  }
+}
+
 export async function createConfirmationRequest(
   pb: DeliveryStoreClient,
   transporter: DeliveryTransport,
@@ -91,7 +143,16 @@ export async function createConfirmationRequest(
   now: () => string = () => new Date().toISOString(),
 ) {
   const invitationInput = getInvitationInput(formData);
-  const evaluator = await createEvaluatorProfile(pb, formData, context.vpeId);
+  const evaluatorId = getEvaluatorId(formData);
+  const photo = getOptionalPhoto(formData);
+  const evaluator = await getEvaluatorById(pb, evaluatorId);
+
+  await assertEvaluatorAvailability(pb, evaluator.id, invitationInput.meetingDate);
+  if (photo) {
+    await pb.collection("evaluators").update(evaluator.id, {
+      photo,
+    });
+  }
   const token = await createInvitationToken();
   const invitation = await pb.collection("invitations").create<InvitationRecord>({
     vpe: context.vpeId,
@@ -190,6 +251,8 @@ export async function rescheduleInvitation(
     }),
   }).catch(() => {});
   // #endregion
+
+  await assertEvaluatorAvailability(pb, record.evaluator, input.meetingDate, invitationId);
 
   await pb.collection("invitations").update(invitationId, {
     meeting_title: input.meetingTitle,

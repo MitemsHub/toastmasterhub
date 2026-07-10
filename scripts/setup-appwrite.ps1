@@ -292,6 +292,7 @@ $collections = @(
       @{ type = "string"; key = "vpe"; size = 64; required = $true },
       @{ type = "string"; key = "full_name"; size = 255; required = $true },
       @{ type = "email"; key = "email"; required = $true },
+      @{ type = "string"; key = "phone"; size = 32; required = $true },
       @{ type = "string"; key = "profile"; size = 5000; required = $true },
       @{ type = "string"; key = "photo"; size = 255; required = $true }
     )

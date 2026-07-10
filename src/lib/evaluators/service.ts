@@ -1,4 +1,5 @@
 import type { BackendClient } from "@/lib/appwrite/client";
+import { formatPhoneNumberForDisplay, normalizePhoneNumber } from "@/lib/evaluators/phone";
 import type { EvaluatorRecord } from "@/lib/types";
 import { evaluatorSchema } from "@/lib/validation/evaluator";
 
@@ -6,13 +7,31 @@ type EvaluatorDirectoryItem = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   profile: string;
   photoUrl: string;
   createdAt: string;
+  createdByVpeId: string;
 };
 
-type EvaluatorDirectoryClient = Pick<BackendClient, "collection" | "files" | "filter">;
-type EvaluatorCreateClient = Pick<BackendClient, "collection">;
+export type EvaluatorProfileInput = {
+  fullName: string;
+  email: string;
+  phone: string;
+  profile: string;
+  photo: File;
+};
+
+type EvaluatorDirectoryClient = Pick<BackendClient, "collection" | "files">;
+type EvaluatorCreateClient = Pick<BackendClient, "collection" | "filter">;
+type EvaluatorLookupClient = Pick<BackendClient, "collection" | "filter">;
+
+export class DuplicateEvaluatorError extends Error {
+  constructor(message = "This evaluator already exists in the shared directory.") {
+    super(message);
+    this.name = "DuplicateEvaluatorError";
+  }
+}
 
 function isRecoverableBackendListError(error: unknown) {
   return typeof error === "object" && error !== null && "status" in error && (
@@ -20,15 +39,9 @@ function isRecoverableBackendListError(error: unknown) {
   );
 }
 
-async function getEvaluatorRecords(
-  pb: EvaluatorDirectoryClient,
-  vpeId: string,
-) {
-  const filter = pb.filter("vpe = {:vpeId}", { vpeId });
-
+async function getEvaluatorRecords(pb: EvaluatorDirectoryClient) {
   try {
     return await pb.collection("evaluators").getFullList<EvaluatorRecord>({
-      filter,
       sort: "-created",
     });
   } catch (error) {
@@ -37,8 +50,26 @@ async function getEvaluatorRecords(
     }
 
     return pb.collection("evaluators").getFullList<EvaluatorRecord>({
-      filter,
     });
+  }
+}
+
+async function findEvaluatorByEmail(
+  pb: EvaluatorLookupClient,
+  email: string,
+) {
+  try {
+    return await pb.collection("evaluators").getFirstListItem<EvaluatorRecord>(
+      pb.filter("email = {:email}", {
+        email,
+      }),
+    );
+  } catch (error) {
+    if (isRecoverableBackendListError(error)) {
+      return null;
+    }
+
+    throw error;
   }
 }
 
@@ -60,12 +91,11 @@ function getPhotoFile(formData: FormData) {
 
 export async function listEvaluatorDirectoryItems(
   pb: EvaluatorDirectoryClient,
-  vpeId: string,
 ): Promise<EvaluatorDirectoryItem[]> {
   let records: EvaluatorRecord[] = [];
 
   try {
-    records = await getEvaluatorRecords(pb, vpeId);
+    records = await getEvaluatorRecords(pb);
   } catch (error) {
     if (!isRecoverableBackendListError(error)) {
       throw error;
@@ -76,10 +106,74 @@ export async function listEvaluatorDirectoryItems(
     id: record.id,
     name: record.full_name,
     email: record.email,
+    phone: formatPhoneNumberForDisplay(record.phone ?? ""),
     profile: record.profile,
     photoUrl: pb.files.getURL(record, record.photo),
     createdAt: record.created ?? "",
+    createdByVpeId: record.vpe,
   }));
+}
+
+export async function getEvaluatorById(
+  pb: Pick<BackendClient, "collection">,
+  evaluatorId: string,
+) {
+  return pb.collection("evaluators").getOne<EvaluatorRecord>(evaluatorId);
+}
+
+export async function updateEvaluatorProfile(
+  pb: Pick<BackendClient, "collection" | "filter">,
+  evaluatorId: string,
+  formData: FormData,
+) {
+  const input = evaluatorSchema.parse({
+    fullName: getStringValue(formData, "fullName"),
+    email: getStringValue(formData, "email"),
+    phone: normalizePhoneNumber(getStringValue(formData, "phone")),
+    profile: getStringValue(formData, "profile"),
+    photoPath: "existing-photo",
+  });
+
+  const existingEvaluator = await findEvaluatorByEmail(pb, input.email);
+
+  if (existingEvaluator && existingEvaluator.id !== evaluatorId) {
+    throw new DuplicateEvaluatorError();
+  }
+
+  return pb.collection("evaluators").update<EvaluatorRecord>(evaluatorId, {
+    full_name: input.fullName,
+    email: input.email,
+    phone: input.phone,
+    profile: input.profile,
+  });
+}
+
+export async function deleteEvaluatorProfile(
+  pb: Pick<BackendClient, "collection">,
+  evaluatorId: string,
+) {
+  await pb.collection("evaluators").delete(evaluatorId);
+}
+
+export async function createEvaluatorProfileFromInput(
+  pb: EvaluatorCreateClient,
+  input: EvaluatorProfileInput,
+  vpeId: string,
+): Promise<EvaluatorRecord> {
+  const existingEvaluator = await findEvaluatorByEmail(pb, input.email);
+
+  if (existingEvaluator) {
+    throw new DuplicateEvaluatorError();
+  }
+
+  return pb.collection("evaluators").create<EvaluatorRecord>({
+    vpe: vpeId,
+    full_name: input.fullName,
+    email: input.email,
+    phone: input.phone,
+    profile: input.profile,
+    photo: input.photo,
+  });
 }
 
 export async function createEvaluatorProfile(
@@ -91,15 +185,20 @@ export async function createEvaluatorProfile(
   const input = evaluatorSchema.parse({
     fullName: getStringValue(formData, "fullName"),
     email: getStringValue(formData, "email"),
+    phone: normalizePhoneNumber(getStringValue(formData, "phone")),
     profile: getStringValue(formData, "profile"),
     photoPath: photo.name,
   });
 
-  return pb.collection("evaluators").create<EvaluatorRecord>({
-    vpe: vpeId,
-    full_name: input.fullName,
-    email: input.email,
-    profile: input.profile,
-    photo,
-  });
+  return createEvaluatorProfileFromInput(
+    pb,
+    {
+      fullName: input.fullName,
+      email: input.email,
+      phone: input.phone,
+      profile: input.profile,
+      photo,
+    },
+    vpeId,
+  );
 }

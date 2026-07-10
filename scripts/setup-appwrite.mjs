@@ -1,11 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import {
-  APPWRITE_COLLECTION_IDS,
-  APPWRITE_DATABASE_ID,
-  APPWRITE_ENDPOINT,
-  APPWRITE_STORAGE_BUCKET_ID,
-} from "../src/lib/appwrite/constants";
+
+const APPWRITE_ENDPOINT = "https://fra.cloud.appwrite.io/v1";
+const APPWRITE_DATABASE_ID = "main";
+const APPWRITE_COLLECTION_IDS = {
+  vpes: "vpes",
+  evaluators: "evaluators",
+  invitations: "invitations",
+};
+const APPWRITE_STORAGE_BUCKET_ID = "evaluator-photos";
 
 const rootDir = process.cwd();
 const envPath = path.join(rootDir, ".env.local");
@@ -63,6 +66,7 @@ const collections = [
       { type: "string", key: "vpe", size: 64, required: true },
       { type: "string", key: "full_name", size: 255, required: true },
       { type: "email", key: "email", required: true },
+      { type: "string", key: "phone", size: 32, required: true },
       { type: "string", key: "profile", size: 5000, required: true },
       { type: "string", key: "photo", size: 255, required: true },
     ],

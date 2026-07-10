@@ -20,13 +20,13 @@ export function EvaluatorForm({
       >
         <div className="max-w-2xl">
           <p className="text-[11px] font-medium tracking-[0.24em] text-[var(--accent)] uppercase">
-            Create evaluator
+            Shared directory
           </p>
           <h2 className="text-balance mt-2 text-2xl font-semibold tracking-[-0.05em] text-zinc-950">
-            Create the request and send it once.
+            Add evaluator details once.
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-7 text-zinc-600">
-            Add the evaluator details, meeting date, and any short note.
+            Save an evaluator into the shared directory so every VPE can reuse the same profile later.
           </p>
         </div>
 
@@ -63,6 +63,16 @@ export function EvaluatorForm({
             />
           </label>
 
+          <label className="grid gap-2 text-sm font-medium text-zinc-800">
+            <span>Phone number</span>
+            <input
+              name="phone"
+              type="tel"
+              placeholder="e.g. +2348012345678"
+              className="h-11 rounded-[0.95rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 outline-none placeholder:text-zinc-400 focus:border-[var(--accent)]"
+            />
+          </label>
+
           <label className="grid gap-2 text-sm font-medium text-zinc-800 lg:col-span-2">
             <span>Evaluator profile</span>
             <textarea
@@ -83,44 +93,17 @@ export function EvaluatorForm({
               className="rounded-[0.95rem] border border-dashed border-[#d8cebf] bg-[#fcfaf7] px-4 py-3 text-sm text-zinc-500"
             />
           </label>
-
-          <label className="grid gap-2 text-sm font-medium text-zinc-800">
-            <span>Meeting date</span>
-            <input
-              name="meetingDate"
-              type="date"
-              className="h-11 rounded-[0.95rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 outline-none focus:border-[var(--accent)]"
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm font-medium text-zinc-800">
-            <span>Meeting title</span>
-            <input
-              name="meetingTitle"
-              type="text"
-              placeholder="Toastmasters club meeting"
-              className="h-11 rounded-[0.95rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 outline-none placeholder:text-zinc-400 focus:border-[var(--accent)]"
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm font-medium text-zinc-800 lg:col-span-2">
-            <span>Meeting note</span>
-            <textarea
-              name="meetingNote"
-              rows={3}
-              placeholder="Optional context for the evaluator."
-              className="rounded-[0.95rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 py-3 outline-none placeholder:text-zinc-400 focus:border-[var(--accent)]"
-            />
-          </label>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm text-zinc-500">The evaluator will receive the link by email.</p>
+          <p className="text-sm text-zinc-500">
+            This saves the evaluator profile only. Use the request form above when you are ready to send.
+          </p>
           <PendingSubmitButton
-            pendingLabel="Sending for confirmation..."
+            pendingLabel="Saving evaluator..."
             className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-950 px-6 text-sm font-semibold text-white hover:-translate-y-0.5 hover:bg-zinc-800"
           >
-            Send for confirmation
+            Add to shared directory
           </PendingSubmitButton>
         </div>
       </form>

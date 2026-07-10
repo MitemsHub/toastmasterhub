@@ -8,8 +8,8 @@ import { getAuthenticatedVpe } from "@/lib/vpe/service";
 const quickLinks = [
   {
     href: "/admin/evaluators",
-    label: "Create evaluator",
-    description: "Start a new evaluator confirmation request and send it immediately.",
+    label: "Manage evaluators",
+    description: "Reuse shared evaluator profiles, send confirmation requests, and upload bulk additions.",
   },
   {
     href: "/admin/invitations",
@@ -69,7 +69,7 @@ export default async function AdminPage() {
               Keep requests moving without repeating work.
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-7 text-zinc-600">
-              Create evaluator requests, track replies, and reschedule only the meeting date when plans change for {vpeName}.
+              Reuse shared evaluator profiles, track replies, and reschedule only the meeting date when plans change for {vpeName}.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[1.1rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 py-3 text-sm text-zinc-600">

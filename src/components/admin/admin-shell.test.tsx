@@ -19,7 +19,7 @@ describe("AdminShell", () => {
     );
 
     expect(screen.getByText(/toast masters hub/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /create evaluator/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /manage evaluators/i })).toHaveAttribute(
       "href",
       "/admin/evaluators",
     );

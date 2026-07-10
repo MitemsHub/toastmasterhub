@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { createMailTransport } from "@/lib/email/transport";
-import { rescheduleInvitation } from "@/lib/invitations/workflow";
+import {
+  EvaluatorDateConflictError,
+  rescheduleInvitation,
+} from "@/lib/invitations/workflow";
 import { getEnv } from "@/lib/config";
 import { getAppBaseUrl } from "@/lib/runtime/app-url";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
@@ -111,6 +114,10 @@ export async function POST(request: Request) {
       message: "Meeting date updated and a fresh confirmation link has been sent.",
     });
   } catch (error) {
+    const message =
+      error instanceof EvaluatorDateConflictError
+        ? "That evaluator is already assigned for that meeting date. Choose another date."
+        : "We could not save that new date. Please review it and try again.";
     // #region debug-point E:reschedule-route-failed
     await fetch("http://127.0.0.1:7777/event", {
       method: "POST",
@@ -130,7 +137,7 @@ export async function POST(request: Request) {
     // #endregion
 
     return NextResponse.json(
-      { message: "We could not save that new date. Please review it and try again." },
+      { message },
       { status: 500 },
     );
   }

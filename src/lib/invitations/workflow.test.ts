@@ -1,22 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import { createConfirmationRequest, rescheduleInvitation } from "./workflow";
+import {
+  createConfirmationRequest,
+  EvaluatorDateConflictError,
+  rescheduleInvitation,
+} from "./workflow";
 
 describe("createConfirmationRequest", () => {
-  it("creates the evaluator, emails the evaluator, and stamps sent_at", async () => {
-    const createEvaluator = vi.fn().mockResolvedValue({
+  it("uses the selected shared evaluator, emails them, and stamps sent_at", async () => {
+    const getEvaluator = vi.fn().mockResolvedValue({
       id: "eva_1",
       full_name: "Amina Bello",
       email: "amina@example.com",
     });
+    const updateEvaluator = vi.fn().mockResolvedValue(undefined);
+    const getInvitations = vi.fn().mockResolvedValue([]);
     const createInvitation = vi.fn().mockResolvedValue({ id: "inv_1" });
     const updateInvitation = vi.fn().mockResolvedValue(undefined);
     const sendMail = vi.fn().mockResolvedValue(undefined);
     const formData = new FormData();
     const photo = new File(["photo"], "amina.jpg", { type: "image/jpeg" });
 
-    formData.set("fullName", "Amina Bello");
-    formData.set("email", "amina@example.com");
-    formData.set("profile", "Warm evaluator who gives direct and practical feedback.");
+    formData.set("evaluatorId", "eva_1");
     formData.set("photo", photo);
     formData.set("meetingTitle", "Toastmasters Club Meeting");
     formData.set("meetingDate", "2026-08-15");
@@ -27,12 +31,15 @@ describe("createConfirmationRequest", () => {
         collection: (name: string) =>
           name === "evaluators"
             ? {
-                create: createEvaluator,
+                getOne: getEvaluator,
+                update: updateEvaluator,
               }
             : {
+                getFullList: getInvitations,
                 create: createInvitation,
                 update: updateInvitation,
               },
+        filter: vi.fn().mockReturnValue("filter"),
       } as never,
       {
         sendMail,
@@ -49,12 +56,10 @@ describe("createConfirmationRequest", () => {
       () => "2026-08-01T09:00:00.000Z",
     );
 
-    expect(createEvaluator).toHaveBeenCalledWith(
-      expect.objectContaining({
-        vpe: "vpe_1",
-        full_name: "Amina Bello",
-      }),
-    );
+    expect(getEvaluator).toHaveBeenCalledWith("eva_1");
+    expect(updateEvaluator).toHaveBeenCalledWith("eva_1", {
+      photo,
+    });
     expect(createInvitation).toHaveBeenCalledWith(
       expect.objectContaining({
         vpe: "vpe_1",
@@ -75,21 +80,11 @@ describe("createConfirmationRequest", () => {
     });
   });
 
-  it("deletes the created invitation when email delivery fails", async () => {
-    const createEvaluator = vi.fn().mockResolvedValue({
-      id: "eva_1",
-      full_name: "Amina Bello",
-      email: "amina@example.com",
-    });
-    const createInvitation = vi.fn().mockResolvedValue({ id: "inv_1" });
-    const deleteInvitation = vi.fn().mockResolvedValue(undefined);
-    const sendMail = vi.fn().mockRejectedValue(new Error("SMTP down"));
+  it("blocks a request when the evaluator is already booked on that date", async () => {
     const formData = new FormData();
     const photo = new File(["photo"], "amina.jpg", { type: "image/jpeg" });
 
-    formData.set("fullName", "Amina Bello");
-    formData.set("email", "amina@example.com");
-    formData.set("profile", "Warm evaluator who gives direct and practical feedback.");
+    formData.set("evaluatorId", "eva_1");
     formData.set("photo", photo);
     formData.set("meetingTitle", "Toastmasters Club Meeting");
     formData.set("meetingDate", "2026-08-15");
@@ -100,13 +95,75 @@ describe("createConfirmationRequest", () => {
           collection: (name: string) =>
             name === "evaluators"
               ? {
-                  create: createEvaluator,
+                  getOne: vi.fn().mockResolvedValue({
+                    id: "eva_1",
+                    full_name: "Amina Bello",
+                    email: "amina@example.com",
+                  }),
+                  update: vi.fn(),
                 }
               : {
+                  getFullList: vi.fn().mockResolvedValue([
+                    {
+                      id: "inv_existing",
+                      status: "pending",
+                      vpe: "vpe_2",
+                    },
+                  ]),
+                  create: vi.fn(),
+                  update: vi.fn(),
+                },
+          filter: vi.fn().mockReturnValue("filter"),
+        } as never,
+        {
+          sendMail: vi.fn(),
+        },
+        {
+          fromAddress: "club@example.com",
+          appBaseUrl: "https://toastmasters.example",
+        },
+        {
+          vpeId: "vpe_1",
+          vpeName: "Chiamaka Obi",
+        },
+        formData,
+      ),
+    ).rejects.toBeInstanceOf(EvaluatorDateConflictError);
+  });
+
+  it("deletes the created invitation when email delivery fails", async () => {
+    const updateEvaluator = vi.fn().mockResolvedValue(undefined);
+    const createInvitation = vi.fn().mockResolvedValue({ id: "inv_1" });
+    const deleteInvitation = vi.fn().mockResolvedValue(undefined);
+    const sendMail = vi.fn().mockRejectedValue(new Error("SMTP down"));
+    const formData = new FormData();
+    const photo = new File(["photo"], "amina.jpg", { type: "image/jpeg" });
+
+    formData.set("evaluatorId", "eva_1");
+    formData.set("photo", photo);
+    formData.set("meetingTitle", "Toastmasters Club Meeting");
+    formData.set("meetingDate", "2026-08-15");
+
+    await expect(
+      createConfirmationRequest(
+        {
+          collection: (name: string) =>
+            name === "evaluators"
+              ? {
+                  getOne: vi.fn().mockResolvedValue({
+                    id: "eva_1",
+                    full_name: "Amina Bello",
+                    email: "amina@example.com",
+                  }),
+                  update: updateEvaluator,
+                }
+              : {
+                  getFullList: vi.fn().mockResolvedValue([]),
                   create: createInvitation,
                   update: vi.fn(),
                   delete: deleteInvitation,
                 },
+          filter: vi.fn().mockReturnValue("filter"),
         } as never,
         {
           sendMail,
@@ -125,12 +182,63 @@ describe("createConfirmationRequest", () => {
 
     expect(deleteInvitation).toHaveBeenCalledWith("inv_1");
   });
+
+  it("uses the existing evaluator portrait when no replacement image is uploaded", async () => {
+    const getEvaluator = vi.fn().mockResolvedValue({
+      id: "eva_1",
+      full_name: "Amina Bello",
+      email: "amina@example.com",
+    });
+    const getInvitations = vi.fn().mockResolvedValue([]);
+    const createInvitation = vi.fn().mockResolvedValue({ id: "inv_1" });
+    const updateInvitation = vi.fn().mockResolvedValue(undefined);
+    const updateEvaluator = vi.fn().mockResolvedValue(undefined);
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    const formData = new FormData();
+
+    formData.set("evaluatorId", "eva_1");
+    formData.set("meetingTitle", "Toastmasters Club Meeting");
+    formData.set("meetingDate", "2026-08-15");
+
+    await createConfirmationRequest(
+      {
+        collection: (name: string) =>
+          name === "evaluators"
+            ? {
+                getOne: getEvaluator,
+                update: updateEvaluator,
+              }
+            : {
+                getFullList: getInvitations,
+                create: createInvitation,
+                update: updateInvitation,
+              },
+        filter: vi.fn().mockReturnValue("filter"),
+      } as never,
+      {
+        sendMail,
+      },
+      {
+        fromAddress: "club@example.com",
+        appBaseUrl: "https://toastmasters.example",
+      },
+      {
+        vpeId: "vpe_1",
+        vpeName: "Chiamaka Obi",
+      },
+      formData,
+    );
+
+    expect(updateEvaluator).not.toHaveBeenCalled();
+    expect(createInvitation).toHaveBeenCalled();
+  });
 });
 
 describe("rescheduleInvitation", () => {
-  it("restores the previous invitation state when the resend email fails", async () => {
+  it("blocks a reschedule when the same evaluator is already booked on that new date", async () => {
     const getFirstListItem = vi.fn().mockResolvedValue({
       id: "inv_1",
+      evaluator: "eva_1",
       meeting_title: "Old Meeting",
       meeting_date: "2026-08-01",
       meeting_note: "Old note",
@@ -145,6 +253,65 @@ describe("rescheduleInvitation", () => {
         },
       },
     });
+    const getFullList = vi.fn().mockResolvedValue([
+      {
+        id: "inv_2",
+        status: "pending",
+        vpe: "vpe_2",
+      },
+    ]);
+    const formData = new FormData();
+
+    formData.set("invitationId", "inv_1");
+    formData.set("meetingTitle", "New Meeting");
+    formData.set("meetingDate", "2026-09-01");
+    formData.set("meetingNote", "New note");
+
+    await expect(
+      rescheduleInvitation(
+        {
+          collection: () => ({
+            getFirstListItem,
+            getFullList,
+            update: vi.fn(),
+          }),
+          filter: vi.fn().mockReturnValue("invitation-filter"),
+        } as never,
+        {
+          sendMail: vi.fn(),
+        },
+        {
+          fromAddress: "club@example.com",
+          appBaseUrl: "https://toastmasters.example",
+        },
+        {
+          vpeId: "vpe_1",
+          vpeName: "Chiamaka Obi",
+        },
+        formData,
+      ),
+    ).rejects.toBeInstanceOf(EvaluatorDateConflictError);
+  });
+
+  it("restores the previous invitation state when the resend email fails", async () => {
+    const getFirstListItem = vi.fn().mockResolvedValue({
+      id: "inv_1",
+      evaluator: "eva_1",
+      meeting_title: "Old Meeting",
+      meeting_date: "2026-08-01",
+      meeting_note: "Old note",
+      sent_at: "2026-07-20T10:00:00.000Z",
+      responded_at: "2026-07-25T10:00:00.000Z",
+      status: "accepted",
+      token_hash: "old-hash",
+      expand: {
+        evaluator: {
+          full_name: "Amina Bello",
+          email: "amina@example.com",
+        },
+      },
+    });
+    const getFullList = vi.fn().mockResolvedValue([]);
     const updateInvitation = vi.fn().mockResolvedValue(undefined);
     const sendMail = vi.fn().mockRejectedValue(new Error("SMTP down"));
     const formData = new FormData();
@@ -159,6 +326,7 @@ describe("rescheduleInvitation", () => {
         {
           collection: () => ({
             getFirstListItem,
+            getFullList,
             update: updateInvitation,
           }),
           filter: vi.fn().mockReturnValue("invitation-filter"),
