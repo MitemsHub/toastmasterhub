@@ -6,7 +6,7 @@ Use Appwrite Cloud as the hosted backend for Toast Masters Hub.
 
 Create a new Appwrite Cloud project and note:
 
-- endpoint, for example `https://fra.cloud.appwrite.io/v1`
+- endpoint, for example `https://your-appwrite-endpoint.example.com/v1`
 - project ID
 
 ## 2. Create a server API key
@@ -25,21 +25,21 @@ Keep this key server-side only. Do not expose it to the browser.
 Set these in `.env.local` for local development and in Netlify environment variables for production:
 
 ```dotenv
-APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
-APPWRITE_PROJECT_ID=your-project-id
+APPWRITE_ENDPOINT=https://your-appwrite-endpoint.example.com/v1
+APPWRITE_PROJECT_ID=your-appwrite-project-id
 APPWRITE_API_KEY=your-server-api-key
-APPWRITE_DATABASE_ID=main
-APPWRITE_VPES_COLLECTION_ID=vpes
-APPWRITE_EVALUATORS_COLLECTION_ID=evaluators
-APPWRITE_INVITATIONS_COLLECTION_ID=invitations
-APPWRITE_STORAGE_BUCKET_ID=evaluator-photos
+APPWRITE_DATABASE_ID=your-database-id
+APPWRITE_VPES_COLLECTION_ID=your-vpes-collection-id
+APPWRITE_EVALUATORS_COLLECTION_ID=your-evaluators-collection-id
+APPWRITE_INVITATIONS_COLLECTION_ID=your-invitations-collection-id
+APPWRITE_STORAGE_BUCKET_ID=your-storage-bucket-id
 VPE_SIGNUP_OTC=YOUR-VPE-OTC
-SMTP_HOST=smtp.gmail.com
+SMTP_HOST=your-smtp-host.example.com
 SMTP_PORT=587
 SMTP_USER=your-gmail-address
 SMTP_PASS=your-gmail-app-password
 SMTP_FROM=your-gmail-address
-APP_BASE_URL=https://your-site.netlify.app
+APP_BASE_URL=https://your-site.example.com
 ```
 
 ## 4. Run the bootstrap script
@@ -56,7 +56,7 @@ The script will create the database, collections, attributes, indexes, and stora
 
 One database with ID:
 
-- `main`
+- your chosen database ID, for example `toastmasters-main`
 
 Three collections inside the database:
 

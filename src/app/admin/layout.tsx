@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { AdminOfflineState } from "@/components/admin/admin-offline-state";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
-import { getEnv } from "@/lib/config";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
@@ -46,7 +45,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <AdminOfflineState
             title="Finish Appwrite setup before opening the VPE workspace"
             description="Toast Masters Hub could not reach Appwrite while checking your session. Confirm the project, database, collections, bucket, and server key before returning to the dashboard."
-            baseUrl={getEnv().APPWRITE_ENDPOINT}
           />
         </div>
       </main>

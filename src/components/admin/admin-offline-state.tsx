@@ -1,13 +1,11 @@
 type AdminOfflineStateProps = {
   title: string;
   description: string;
-  baseUrl: string;
 };
 
 export function AdminOfflineState({
   title,
   description,
-  baseUrl,
 }: AdminOfflineStateProps) {
   return (
     <section className="rounded-[1.5rem] border border-[#e6ddd1] bg-white p-6 text-zinc-950 shadow-[0_26px_80px_-64px_rgba(15,23,42,0.28)] sm:p-6">
@@ -25,7 +23,7 @@ export function AdminOfflineState({
           <span className="font-semibold text-zinc-950">invitations</span>.
         </p>
         <p className="mt-2 text-sm leading-7 text-zinc-600">
-          Current Appwrite target: <span className="font-semibold text-zinc-950">{baseUrl}</span>
+          The backend target is configured server-side and will come back once Appwrite is reachable.
         </p>
       </div>
     </section>
