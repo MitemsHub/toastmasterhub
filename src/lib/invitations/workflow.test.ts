@@ -232,6 +232,57 @@ describe("createConfirmationRequest", () => {
     expect(updateEvaluator).not.toHaveBeenCalled();
     expect(createInvitation).toHaveBeenCalled();
   });
+
+  it("ignores an empty replacement image field and keeps the existing portrait", async () => {
+    const getEvaluator = vi.fn().mockResolvedValue({
+      id: "eva_1",
+      full_name: "Amina Bello",
+      email: "amina@example.com",
+    });
+    const getInvitations = vi.fn().mockResolvedValue([]);
+    const createInvitation = vi.fn().mockResolvedValue({ id: "inv_1" });
+    const updateInvitation = vi.fn().mockResolvedValue(undefined);
+    const updateEvaluator = vi.fn().mockResolvedValue(undefined);
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    const formData = new FormData();
+
+    formData.set("evaluatorId", "eva_1");
+    formData.set("photo", new File([], "", { type: "application/octet-stream" }));
+    formData.set("meetingTitle", "Toastmasters Club Meeting");
+    formData.set("meetingDate", "2026-08-15");
+
+    await createConfirmationRequest(
+      {
+        collection: (name: string) =>
+          name === "evaluators"
+            ? {
+                getOne: getEvaluator,
+                update: updateEvaluator,
+              }
+            : {
+                getFullList: getInvitations,
+                create: createInvitation,
+                update: updateInvitation,
+              },
+        filter: vi.fn().mockReturnValue("filter"),
+      } as never,
+      {
+        sendMail,
+      },
+      {
+        fromAddress: "club@example.com",
+        appBaseUrl: "https://toastmasters.example",
+      },
+      {
+        vpeId: "vpe_1",
+        vpeName: "Chiamaka Obi",
+      },
+      formData,
+    );
+
+    expect(updateEvaluator).not.toHaveBeenCalled();
+    expect(createInvitation).toHaveBeenCalled();
+  });
 });
 
 describe("rescheduleInvitation", () => {

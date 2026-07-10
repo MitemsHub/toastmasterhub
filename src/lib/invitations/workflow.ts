@@ -78,7 +78,7 @@ function getEvaluatorId(formData: FormData) {
 function getOptionalPhoto(formData: FormData) {
   const value = formData.get("photo");
 
-  if (!(value instanceof File) || !value.name) {
+  if (!(value instanceof File) || !value.name || value.size <= 0) {
     return null;
   }
 

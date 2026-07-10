@@ -63,4 +63,31 @@ describe("EvaluatorDirectory", () => {
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /delete evaluator/i })).toBeInTheDocument();
   });
+
+  it("paginates the shared directory list", () => {
+    render(
+      <EvaluatorDirectory
+        evaluators={Array.from({ length: 5 }, (_, index) => ({
+          id: `eva_${index + 1}`,
+          name: `Evaluator ${index + 1}`,
+          email: `evaluator${index + 1}@example.com`,
+          phone: `+23480123456${index + 1}`,
+          profile: `Profile ${index + 1}`,
+          photoUrl: `https://example.com/evaluator-${index + 1}.jpg`,
+          createdAt: "2026-08-01T10:00:00.000Z",
+        }))}
+      />,
+    );
+
+    expect(screen.getByText("Evaluator 1")).toBeInTheDocument();
+    expect(screen.getByText("Evaluator 4")).toBeInTheDocument();
+    expect(screen.queryByText("Evaluator 5")).not.toBeInTheDocument();
+    expect(screen.getByText(/page 1 of 2/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+
+    expect(screen.getByText("Evaluator 5")).toBeInTheDocument();
+    expect(screen.queryByText("Evaluator 1")).not.toBeInTheDocument();
+    expect(screen.getByText(/showing 5-5/i)).toBeInTheDocument();
+  });
 });

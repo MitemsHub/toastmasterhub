@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Reveal } from "@/components/motion/reveal";
 import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
+
+const DIRECTORY_PAGE_SIZE = 4;
 
 type EvaluatorListItem = {
   id: string;
@@ -201,6 +203,21 @@ export function EvaluatorDirectory({
   updateAction,
   deleteAction,
 }: EvaluatorDirectoryProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(evaluators.length / DIRECTORY_PAGE_SIZE));
+  const paginatedEvaluators = useMemo(() => {
+    const startIndex = (currentPage - 1) * DIRECTORY_PAGE_SIZE;
+
+    return evaluators.slice(startIndex, startIndex + DIRECTORY_PAGE_SIZE);
+  }, [currentPage, evaluators]);
+  const pageStart = evaluators.length === 0 ? 0 : (currentPage - 1) * DIRECTORY_PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * DIRECTORY_PAGE_SIZE, evaluators.length);
+
+  useEffect(() => {
+    setCurrentPage((previousPage) => Math.min(previousPage, totalPages));
+  }, [totalPages]);
+
   if (evaluators.length === 0) {
     return (
       <Reveal>
@@ -228,11 +245,16 @@ export function EvaluatorDirectory({
               Shared evaluator directory
             </h2>
           </div>
-          <p className="text-sm text-zinc-500">{evaluators.length} shared profiles</p>
+          <div className="text-sm text-zinc-500">
+            <p>{evaluators.length} shared profiles</p>
+            <p>
+              Showing {pageStart}-{pageEnd}
+            </p>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-3">
-          {evaluators.map((evaluator) => (
+          {paginatedEvaluators.map((evaluator) => (
             <EvaluatorCard
               key={evaluator.id}
               deleteAction={deleteAction}
@@ -241,6 +263,32 @@ export function EvaluatorDirectory({
             />
           ))}
         </div>
+
+        {totalPages > 1 ? (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#efe7dc] pt-5">
+            <p className="text-sm text-zinc-500">
+              Page {currentPage} of {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[#e6ddd1] bg-white px-4 text-sm font-medium text-zinc-600 hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[#e6ddd1] bg-white px-4 text-sm font-medium text-zinc-600 hover:border-zinc-300 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </Reveal>
   );
