@@ -2,9 +2,9 @@
 
 import { type FormEvent, useMemo, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Reveal } from "@/components/motion/reveal";
+import { useRouter } from "@/lib/next/navigation";
 
 type InvitationListItem = {
   id: string;

@@ -43,6 +43,11 @@ declare module "next/headers" {
 declare module "next/navigation" {
   export function redirect(path: string): never;
   export function usePathname(): string;
+  export type AppRouterInstance = {
+    replace(href: string): void;
+    refresh(): void;
+  };
+  export function useRouter(): AppRouterInstance;
 }
 
 declare module "next/link" {

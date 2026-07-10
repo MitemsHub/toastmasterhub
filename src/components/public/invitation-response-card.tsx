@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import type { InvitationConfirmationDetails } from "@/lib/invitations/response";
+import { useRouter } from "@/lib/next/navigation";
 
 type InvitationResponseState = {
   status: "idle" | "success" | "error";

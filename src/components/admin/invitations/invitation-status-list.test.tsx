@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { InvitationStatusList } from "./invitation-status-list";
 
-vi.mock("next/navigation", () => ({
+vi.mock("@/lib/next/navigation", () => ({
   useRouter: () => ({
     replace: vi.fn(),
     refresh: vi.fn(),
