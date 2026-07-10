@@ -4,7 +4,6 @@ import {
   respondToInvitation,
 } from "@/lib/invitations/response";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
-import { redirect } from "@/lib/next/navigation";
 
 type ConfirmationPageProps = {
   params: Promise<{
@@ -14,6 +13,11 @@ type ConfirmationPageProps = {
 };
 
 type SavedResponse = "accepted" | "declined";
+type ConfirmationActionState = {
+  status: "idle" | "success" | "error";
+  response?: SavedResponse;
+  message?: string;
+};
 
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -37,21 +41,17 @@ export default async function ConfirmationPage({
     getSearchParamValue(resolvedSearchParams.saved) === "1"
       ? getSavedResponse(getSearchParamValue(resolvedSearchParams.response))
       : undefined;
-  const feedbackMessage =
-    savedResponse === "declined"
-      ? "Sorry, we will reschedule."
-      : savedResponse === "accepted"
-        ? "Thank you. Your availability has been saved."
-        : undefined;
   let invitation = null;
 
-  async function saveResponse(formData: FormData) {
+  async function saveResponse(
+    _previousState: ConfirmationActionState,
+    formData: FormData,
+  ): Promise<ConfirmationActionState> {
     "use server";
 
     const token = resolvedParams.token;
     const response =
       formData.get("response") === "declined" ? "declined" : "accepted";
-    const confirmationPath = `/confirm/${encodeURIComponent(token)}`;
 
     try {
       const admin = await getAppwriteAdmin();
@@ -59,11 +59,21 @@ export default async function ConfirmationPage({
         token,
         response,
       });
-    } catch {
-      redirect(confirmationPath);
-    }
 
-    redirect(`${confirmationPath}?saved=1&response=${response}`);
+      return {
+        status: "success",
+        response,
+        message:
+          response === "declined"
+            ? "Sorry, we will reschedule."
+            : "Thank you. Your availability has been saved.",
+      };
+    } catch {
+      return {
+        status: "error",
+        message: "This response could not be saved right now. Please try again.",
+      };
+    }
   }
 
   try {
@@ -122,7 +132,16 @@ export default async function ConfirmationPage({
           invitation={invitation}
           token={resolvedParams.token}
           action={saveResponse}
-          feedbackMessage={feedbackMessage}
+          initialState={{
+            status: savedResponse ? "success" : "idle",
+            response: savedResponse,
+            message:
+              savedResponse === "declined"
+                ? "Sorry, we will reschedule."
+                : savedResponse === "accepted"
+                  ? "Thank you. Your availability has been saved."
+                  : undefined,
+          }}
         />
       </div>
     </main>

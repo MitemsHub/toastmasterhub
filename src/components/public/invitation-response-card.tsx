@@ -1,12 +1,24 @@
+"use client";
+
+import { useActionState } from "react";
 import Image from "next/image";
 import type { InvitationConfirmationDetails } from "@/lib/invitations/response";
 import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
 
+type InvitationResponseState = {
+  status: "idle" | "success" | "error";
+  response?: Extract<InvitationConfirmationDetails["status"], "accepted" | "declined">;
+  message?: string;
+};
+
 type InvitationResponseCardProps = {
   invitation: InvitationConfirmationDetails;
   token: string;
-  action?: (formData: FormData) => void | Promise<void>;
-  feedbackMessage?: string;
+  action?: (
+    previousState: InvitationResponseState,
+    formData: FormData,
+  ) => InvitationResponseState | Promise<InvitationResponseState>;
+  initialState?: InvitationResponseState;
 };
 
 function getLockedResponseMessage(status: InvitationConfirmationDetails["status"]) {
@@ -25,8 +37,19 @@ export function InvitationResponseCard({
   invitation,
   token,
   action,
-  feedbackMessage,
+  initialState = { status: "idle" },
 }: InvitationResponseCardProps) {
+  const [actionState, formAction] = useActionState(
+    action ?? (async (state: InvitationResponseState) => state),
+    initialState,
+  );
+  const effectiveStatus =
+    actionState.status === "success" && actionState.response
+      ? actionState.response
+      : invitation.status;
+  const canRespond = invitation.canRespond && actionState.status !== "success";
+  const feedbackMessage = actionState.message;
+
   return (
     <section className="mx-auto w-full max-w-4xl overflow-hidden rounded-[1.8rem] border border-[#e6ddd1] bg-white p-6 text-zinc-950 shadow-[0_40px_120px_-70px_rgba(15,23,42,0.28)] sm:p-8">
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
@@ -74,13 +97,19 @@ export function InvitationResponseCard({
       </div>
 
       {feedbackMessage ? (
-        <p className="mt-6 rounded-[1.1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+        <p
+          className={`mt-6 rounded-[1.1rem] px-4 py-3 text-sm font-medium ${
+            actionState.status === "error"
+              ? "border border-rose-200 bg-rose-50 text-rose-800"
+              : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
           {feedbackMessage}
         </p>
       ) : null}
 
-      {invitation.canRespond ? (
-        <form action={action} className="mt-8 grid gap-3 sm:grid-cols-2">
+      {canRespond ? (
+        <form action={formAction} className="mt-8 grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="token" value={token} />
           <PendingSubmitButton
             name="response"
@@ -105,7 +134,7 @@ export function InvitationResponseCard({
             This meeting request has already been answered.
           </p>
           <p className="text-sm font-medium text-zinc-800">
-            {getLockedResponseMessage(invitation.status)}
+            {getLockedResponseMessage(effectiveStatus)}
           </p>
         </div>
       )}
