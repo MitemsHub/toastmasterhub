@@ -1,12 +1,12 @@
-import nodemailer from "nodemailer";
 import { cookies } from "next/headers";
 import { InvitationStatusList } from "@/components/admin/invitations/invitation-status-list";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getEnv } from "@/lib/config";
+import { createMailTransport } from "@/lib/email/transport";
 import { redirect } from "@/lib/next/navigation";
 import { listInvitationStatusItems, summarizeInvitationStatuses } from "@/lib/invitations/service";
 import { cancelInvitation, rescheduleInvitation } from "@/lib/invitations/workflow";
-import { getAppBaseUrl, getSmtpHost } from "@/lib/runtime/app-url";
+import { getAppBaseUrl } from "@/lib/runtime/app-url";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
@@ -64,15 +64,7 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
     }
 
     try {
-      const transporter = nodemailer.createTransport({
-        host: getSmtpHost(),
-        port: currentEnv.SMTP_PORT,
-        secure: currentEnv.SMTP_PORT === 465,
-        auth: {
-          user: currentEnv.SMTP_USER,
-          pass: currentEnv.SMTP_PASS,
-        },
-      });
+      const transporter = createMailTransport();
 
       await rescheduleInvitation(
         admin,

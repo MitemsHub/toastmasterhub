@@ -1,11 +1,10 @@
-import nodemailer from "nodemailer";
 import { LandingPage } from "@/components/home/landing-page";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createVpeSessionValue, VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { getAppwriteAdmin } from "@/lib/appwrite/client";
 import { getEnv } from "@/lib/config";
-import { getSmtpHost } from "@/lib/runtime/app-url";
+import { createMailTransport } from "@/lib/email/transport";
 import {
   authenticateVpeWithAccessCode,
   createOrRefreshVpeAccess,
@@ -101,15 +100,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     try {
       const env = getEnv();
       const pb = await getAppwriteAdmin();
-      const transporter = nodemailer.createTransport({
-        host: getSmtpHost(),
-        port: env.SMTP_PORT,
-        secure: env.SMTP_PORT === 465,
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS,
-        },
-      });
+      const transporter = createMailTransport();
 
       await createOrRefreshVpeAccess(
         pb,
