@@ -22,14 +22,8 @@ if (Test-Path $envPath) {
 }
 
 $requiredEnvKeys = @(
-  "APPWRITE_ENDPOINT",
   "APPWRITE_PROJECT_ID",
-  "APPWRITE_API_KEY",
-  "APPWRITE_DATABASE_ID",
-  "APPWRITE_VPES_COLLECTION_ID",
-  "APPWRITE_EVALUATORS_COLLECTION_ID",
-  "APPWRITE_INVITATIONS_COLLECTION_ID",
-  "APPWRITE_STORAGE_BUCKET_ID"
+  "APPWRITE_API_KEY"
 )
 
 foreach ($key in $requiredEnvKeys) {
@@ -38,14 +32,14 @@ foreach ($key in $requiredEnvKeys) {
   }
 }
 
-$endpoint = [Environment]::GetEnvironmentVariable("APPWRITE_ENDPOINT").TrimEnd("/")
+$endpoint = "https://fra.cloud.appwrite.io/v1"
 $projectId = [Environment]::GetEnvironmentVariable("APPWRITE_PROJECT_ID")
 $apiKey = [Environment]::GetEnvironmentVariable("APPWRITE_API_KEY")
-$databaseId = [Environment]::GetEnvironmentVariable("APPWRITE_DATABASE_ID")
-$vpesCollectionId = [Environment]::GetEnvironmentVariable("APPWRITE_VPES_COLLECTION_ID")
-$evaluatorsCollectionId = [Environment]::GetEnvironmentVariable("APPWRITE_EVALUATORS_COLLECTION_ID")
-$invitationsCollectionId = [Environment]::GetEnvironmentVariable("APPWRITE_INVITATIONS_COLLECTION_ID")
-$storageBucketId = [Environment]::GetEnvironmentVariable("APPWRITE_STORAGE_BUCKET_ID")
+$databaseId = "main"
+$vpesCollectionId = "vpes"
+$evaluatorsCollectionId = "evaluators"
+$invitationsCollectionId = "invitations"
+$storageBucketId = "evaluator-photos"
 
 $headers = @{
   "Content-Type" = "application/json"

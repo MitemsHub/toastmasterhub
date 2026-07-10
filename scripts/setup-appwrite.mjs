@@ -1,5 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import {
+  APPWRITE_COLLECTION_IDS,
+  APPWRITE_DATABASE_ID,
+  APPWRITE_ENDPOINT,
+  APPWRITE_STORAGE_BUCKET_ID,
+} from "../src/lib/appwrite/constants";
 
 const rootDir = process.cwd();
 const envPath = path.join(rootDir, ".env.local");
@@ -7,14 +13,8 @@ const envPath = path.join(rootDir, ".env.local");
 loadEnvFile(envPath);
 
 const requiredEnvKeys = [
-  "APPWRITE_ENDPOINT",
   "APPWRITE_PROJECT_ID",
   "APPWRITE_API_KEY",
-  "APPWRITE_DATABASE_ID",
-  "APPWRITE_VPES_COLLECTION_ID",
-  "APPWRITE_EVALUATORS_COLLECTION_ID",
-  "APPWRITE_INVITATIONS_COLLECTION_ID",
-  "APPWRITE_STORAGE_BUCKET_ID",
 ];
 
 for (const key of requiredEnvKeys) {
@@ -24,14 +24,14 @@ for (const key of requiredEnvKeys) {
 }
 
 const env = {
-  endpoint: normalizeEndpoint(process.env.APPWRITE_ENDPOINT),
+  endpoint: normalizeEndpoint(APPWRITE_ENDPOINT),
   projectId: process.env.APPWRITE_PROJECT_ID,
   apiKey: process.env.APPWRITE_API_KEY,
-  databaseId: process.env.APPWRITE_DATABASE_ID,
-  vpesCollectionId: process.env.APPWRITE_VPES_COLLECTION_ID,
-  evaluatorsCollectionId: process.env.APPWRITE_EVALUATORS_COLLECTION_ID,
-  invitationsCollectionId: process.env.APPWRITE_INVITATIONS_COLLECTION_ID,
-  storageBucketId: process.env.APPWRITE_STORAGE_BUCKET_ID,
+  databaseId: APPWRITE_DATABASE_ID,
+  vpesCollectionId: APPWRITE_COLLECTION_IDS.vpes,
+  evaluatorsCollectionId: APPWRITE_COLLECTION_IDS.evaluators,
+  invitationsCollectionId: APPWRITE_COLLECTION_IDS.invitations,
+  storageBucketId: APPWRITE_STORAGE_BUCKET_ID,
 };
 
 const DATABASE_NAME = "Toast Masters Hub";

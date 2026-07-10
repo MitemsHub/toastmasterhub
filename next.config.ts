@@ -1,18 +1,16 @@
+import { APPWRITE_ENDPOINT } from "./src/lib/appwrite/constants";
+
 function getAppwriteRemotePattern() {
-  const appwriteEndpoint = process.env.APPWRITE_ENDPOINT;
-
-  if (!appwriteEndpoint) {
-    return null;
-  }
-
   try {
-    const url = new URL(appwriteEndpoint);
+    const url = new URL(APPWRITE_ENDPOINT);
 
     return {
       protocol: url.protocol.replace(":", ""),
       hostname: url.hostname,
       ...(url.port ? { port: url.port } : {}),
     };
+  } catch {
+    return null;
   } catch {
     return null;
   }

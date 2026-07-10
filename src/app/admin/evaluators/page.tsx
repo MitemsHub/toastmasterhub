@@ -7,6 +7,7 @@ import { listEvaluatorDirectoryItems } from "@/lib/evaluators/service";
 import { createConfirmationRequest } from "@/lib/invitations/workflow";
 import { getEnv } from "@/lib/config";
 import { redirect } from "@/lib/next/navigation";
+import { getAppBaseUrl, getSmtpHost } from "@/lib/runtime/app-url";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
@@ -46,7 +47,7 @@ export default async function EvaluatorsPage({ searchParams }: EvaluatorsPagePro
 
     try {
       const transporter = nodemailer.createTransport({
-        host: currentEnv.SMTP_HOST,
+        host: getSmtpHost(),
         port: currentEnv.SMTP_PORT,
         secure: currentEnv.SMTP_PORT === 465,
         auth: {
@@ -60,7 +61,7 @@ export default async function EvaluatorsPage({ searchParams }: EvaluatorsPagePro
         transporter,
         {
           fromAddress: currentEnv.SMTP_FROM,
-          appBaseUrl: currentEnv.APP_BASE_URL,
+          appBaseUrl: await getAppBaseUrl(),
         },
         {
           vpeId: currentVpe.id,

@@ -39,21 +39,14 @@ describe("EvaluatorsPage", () => {
     vi.mocked(getEnv).mockReset();
     vi.mocked(getAppwriteAdmin).mockReset();
     vi.mocked(getEnv).mockReturnValue({
-      APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
       APPWRITE_PROJECT_ID: "toastmasters-hub",
       APPWRITE_API_KEY: "secret-api-key",
-      APPWRITE_DATABASE_ID: "main",
-      APPWRITE_VPES_COLLECTION_ID: "vpes",
-      APPWRITE_EVALUATORS_COLLECTION_ID: "evaluators",
-      APPWRITE_INVITATIONS_COLLECTION_ID: "invitations",
-      APPWRITE_STORAGE_BUCKET_ID: "evaluator-photos",
-      SMTP_HOST: "smtp.gmail.com",
       SMTP_PORT: 587,
       SMTP_USER: "club@example.com",
       SMTP_PASS: "app-password",
       SMTP_FROM: "club@example.com",
       VPE_SIGNUP_OTC: "TMH-ABUJA-2026",
-      APP_BASE_URL: "http://localhost:3000",
+      APP_BASE_URL: "https://toastmastershub.example.com",
     });
     vi.mocked(getAuthenticatedVpe).mockResolvedValue({
       id: "vpe_1",

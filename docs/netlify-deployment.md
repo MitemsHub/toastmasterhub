@@ -21,21 +21,13 @@ The full setup is in [appwrite-cloud-setup.md](./appwrite-cloud-setup.md).
 Set these in `Site configuration -> Environment variables`:
 
 ```dotenv
-APPWRITE_ENDPOINT=https://your-appwrite-endpoint.example.com/v1
 APPWRITE_PROJECT_ID=your-appwrite-project-id
 APPWRITE_API_KEY=your-server-api-key
-APPWRITE_DATABASE_ID=your-database-id
-APPWRITE_VPES_COLLECTION_ID=your-vpes-collection-id
-APPWRITE_EVALUATORS_COLLECTION_ID=your-evaluators-collection-id
-APPWRITE_INVITATIONS_COLLECTION_ID=your-invitations-collection-id
-APPWRITE_STORAGE_BUCKET_ID=your-storage-bucket-id
 VPE_SIGNUP_OTC=YOUR-VPE-OTC
-SMTP_HOST=your-smtp-host.example.com
 SMTP_PORT=587
 SMTP_USER=your-gmail-address
 SMTP_PASS=your-gmail-app-password
 SMTP_FROM=your-gmail-address
-APP_BASE_URL=https://your-site.example.com
 ```
 
 ## 3. Redeploy after saving variables
@@ -52,9 +44,6 @@ After saving the variables:
 Before testing signup:
 
 - confirm the Appwrite project exists and the server API key is active
-- confirm `APP_BASE_URL` exactly matches the Netlify site URL
-- confirm `APPWRITE_ENDPOINT` is the real Appwrite Cloud endpoint
-- confirm the database, collection, and bucket IDs match exactly
 - confirm the Gmail app password is the same one that works locally
 
 ## 5. If signup still fails
@@ -63,8 +52,7 @@ Check the Netlify function logs for the server action failure.
 
 Common production causes:
 
-- wrong Appwrite endpoint, project ID, or API key
-- wrong database, collection, or bucket ID
+- wrong Appwrite project ID or API key
 - missing Netlify environment variable
 - Gmail app password copied incorrectly
 - env variables changed without a fresh deploy

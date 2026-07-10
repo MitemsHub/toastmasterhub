@@ -6,6 +6,7 @@ import { getEnv } from "@/lib/config";
 import { redirect } from "@/lib/next/navigation";
 import { listInvitationStatusItems, summarizeInvitationStatuses } from "@/lib/invitations/service";
 import { cancelInvitation, rescheduleInvitation } from "@/lib/invitations/workflow";
+import { getAppBaseUrl, getSmtpHost } from "@/lib/runtime/app-url";
 import { VPE_SESSION_COOKIE } from "@/lib/auth/vpe-session";
 import { getAuthenticatedVpe } from "@/lib/vpe/service";
 
@@ -64,7 +65,7 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
 
     try {
       const transporter = nodemailer.createTransport({
-        host: currentEnv.SMTP_HOST,
+        host: getSmtpHost(),
         port: currentEnv.SMTP_PORT,
         secure: currentEnv.SMTP_PORT === 465,
         auth: {
@@ -78,7 +79,7 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
         transporter,
         {
           fromAddress: currentEnv.SMTP_FROM,
-          appBaseUrl: currentEnv.APP_BASE_URL,
+          appBaseUrl: await getAppBaseUrl(),
         },
         {
           vpeId: currentVpe.id,

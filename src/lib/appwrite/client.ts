@@ -1,4 +1,10 @@
 import { randomUUID } from "node:crypto";
+import {
+  APPWRITE_COLLECTION_IDS,
+  APPWRITE_DATABASE_ID,
+  APPWRITE_ENDPOINT,
+  APPWRITE_STORAGE_BUCKET_ID,
+} from "@/lib/appwrite/constants";
 import { getEnv } from "@/lib/config";
 
 type AppwriteCollectionName = "vpes" | "evaluators" | "invitations";
@@ -63,14 +69,14 @@ class BackendRequestError extends Error {
 
 function getCollectionId(env: AppwriteEnv, name: AppwriteCollectionName) {
   if (name === "vpes") {
-    return env.APPWRITE_VPES_COLLECTION_ID;
+    return APPWRITE_COLLECTION_IDS.vpes;
   }
 
   if (name === "evaluators") {
-    return env.APPWRITE_EVALUATORS_COLLECTION_ID;
+    return APPWRITE_COLLECTION_IDS.evaluators;
   }
 
-  return env.APPWRITE_INVITATIONS_COLLECTION_ID;
+  return APPWRITE_COLLECTION_IDS.invitations;
 }
 
 function normalizeEndpoint(endpoint: string) {
@@ -87,7 +93,7 @@ function createAppwriteHeaders(env: AppwriteEnv, contentType = "application/json
 }
 
 function createUrl(env: AppwriteEnv, path: string) {
-  return new URL(path.replace(/^\/+/, ""), normalizeEndpoint(env.APPWRITE_ENDPOINT));
+  return new URL(path.replace(/^\/+/, ""), normalizeEndpoint(APPWRITE_ENDPOINT));
 }
 
 async function parseErrorResponse(response: Response) {
@@ -215,7 +221,7 @@ async function uploadEvaluatorPhoto(env: AppwriteEnv, file: File) {
   formData.append("permissions[]", "read(\"any\")");
 
   const response = await fetch(
-    createUrl(env, `/storage/buckets/${env.APPWRITE_STORAGE_BUCKET_ID}/files`),
+    createUrl(env, `/storage/buckets/${APPWRITE_STORAGE_BUCKET_ID}/files`),
     {
       method: "POST",
       headers: {
@@ -271,7 +277,7 @@ async function expandEvaluatorReference(
   try {
     const evaluatorDocument = await requestJson<AppwriteDocument>(
       env,
-      `/databases/${env.APPWRITE_DATABASE_ID}/collections/${env.APPWRITE_EVALUATORS_COLLECTION_ID}/documents/${evaluatorId}`,
+      `/databases/${APPWRITE_DATABASE_ID}/collections/${APPWRITE_COLLECTION_IDS.evaluators}/documents/${evaluatorId}`,
       {
         method: "GET",
       },
@@ -280,7 +286,7 @@ async function expandEvaluatorReference(
     return {
       ...document,
       expand: {
-        evaluator: mapDocument("evaluators", env.APPWRITE_EVALUATORS_COLLECTION_ID, evaluatorDocument),
+        evaluator: mapDocument("evaluators", APPWRITE_COLLECTION_IDS.evaluators, evaluatorDocument),
       },
     };
   } catch (error) {
@@ -310,7 +316,7 @@ function createCollectionClient(
   collectionName: AppwriteCollectionName,
 ): BackendCollectionClient {
   const collectionId = getCollectionId(env, collectionName);
-  const collectionPath = `/databases/${env.APPWRITE_DATABASE_ID}/collections/${collectionId}/documents`;
+  const collectionPath = `/databases/${APPWRITE_DATABASE_ID}/collections/${collectionId}/documents`;
 
   return {
     async getFirstListItem<T>(filter: BackendFilter, options?: FirstListOptions) {
@@ -403,7 +409,7 @@ function createCollectionClient(
 }
 
 function createPublicFileUrl(env: AppwriteEnv, fileId: string) {
-  const url = createUrl(env, `/storage/buckets/${env.APPWRITE_STORAGE_BUCKET_ID}/files/${fileId}/view`);
+  const url = createUrl(env, `/storage/buckets/${APPWRITE_STORAGE_BUCKET_ID}/files/${fileId}/view`);
   url.searchParams.set("project", env.APPWRITE_PROJECT_ID);
 
   return url.toString();
