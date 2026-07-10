@@ -86,7 +86,7 @@ export async function createEvaluatorProfile(
   pb: EvaluatorCreateClient,
   formData: FormData,
   vpeId: string,
-) {
+): Promise<EvaluatorRecord> {
   const photo = getPhotoFile(formData);
   const input = evaluatorSchema.parse({
     fullName: getStringValue(formData, "fullName"),
@@ -95,7 +95,7 @@ export async function createEvaluatorProfile(
     photoPath: photo.name,
   });
 
-  return pb.collection("evaluators").create({
+  return pb.collection("evaluators").create<EvaluatorRecord>({
     vpe: vpeId,
     full_name: input.fullName,
     email: input.email,

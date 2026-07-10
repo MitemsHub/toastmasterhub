@@ -1,5 +1,6 @@
 import type { BackendClient } from "@/lib/appwrite/client";
 import { createEvaluatorProfile } from "@/lib/evaluators/service";
+import type { InvitationRecord } from "@/lib/types";
 import { invitationSchema } from "@/lib/validation/invitation";
 import { sendInvitationEmail } from "./email";
 import { createInvitationToken } from "./token";
@@ -88,7 +89,7 @@ export async function createConfirmationRequest(
   const invitationInput = getInvitationInput(formData);
   const evaluator = await createEvaluatorProfile(pb, formData, context.vpeId);
   const token = await createInvitationToken();
-  const invitation = await pb.collection("invitations").create({
+  const invitation = await pb.collection("invitations").create<InvitationRecord>({
     vpe: context.vpeId,
     evaluator: evaluator.id,
     meeting_title: invitationInput.meetingTitle,
