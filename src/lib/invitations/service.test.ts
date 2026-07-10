@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { listInvitationStatusItems, summarizeInvitationStatuses } from "./service";
 
 describe("listInvitationStatusItems", () => {
-  it("maps PocketBase invitations into VPE-scoped status list items", async () => {
+  it("maps invitations into shared status list items", async () => {
     const getFullList = vi.fn().mockResolvedValue([
       {
         id: "inv_1",
+        vpe: "vpe_1",
         meeting_title: "Toastmasters Club Meeting",
         meeting_date: "2026-08-15",
         meeting_note: "Please arrive early.",
@@ -18,6 +19,10 @@ describe("listInvitationStatusItems", () => {
             email: "amina@example.com",
             profile: "Warm evaluator who gives direct and practical feedback.",
             photo: "amina.jpg",
+          },
+          vpe: {
+            full_name: "Chuks Mitti",
+            email: "emmanuelmitti1998@gmail.com",
           },
         },
       },
@@ -33,12 +38,15 @@ describe("listInvitationStatusItems", () => {
           getURL: () => "https://example.com/amina.jpg",
         },
       } as never,
-      "vpe_1",
+      {
+        currentVpeId: "vpe_1",
+        includeAllVpes: true,
+      },
     );
 
     expect(getFullList).toHaveBeenCalledWith({
-      expand: "evaluator",
-      filter: "vpe = 'vpe_1'",
+      expand: "evaluator,vpe",
+      filter: undefined,
       sort: "-created",
     });
     expect(result).toEqual([
@@ -48,6 +56,9 @@ describe("listInvitationStatusItems", () => {
         evaluatorEmail: "amina@example.com",
         evaluatorProfile: "Warm evaluator who gives direct and practical feedback.",
         evaluatorPhotoUrl: "https://example.com/amina.jpg",
+        requestedByName: "Chuks Mitti",
+        requestedByEmail: "emmanuelmitti1998@gmail.com",
+        ownedByCurrentVpe: true,
         meetingTitle: "Toastmasters Club Meeting",
         meetingDate: "2026-08-15",
         meetingNote: "Please arrive early.",
@@ -65,6 +76,7 @@ describe("listInvitationStatusItems", () => {
       .mockResolvedValueOnce([
         {
           id: "inv_1",
+          vpe: "vpe_1",
           meeting_title: "Toastmasters Club Meeting",
           meeting_date: "2026-08-15",
           meeting_note: "Please arrive early.",
@@ -77,6 +89,10 @@ describe("listInvitationStatusItems", () => {
               email: "amina@example.com",
               profile: "Warm evaluator who gives direct and practical feedback.",
               photo: "amina.jpg",
+            },
+            vpe: {
+              full_name: "Chuks Mitti",
+              email: "emmanuelmitti1998@gmail.com",
             },
           },
         },
@@ -92,16 +108,18 @@ describe("listInvitationStatusItems", () => {
           getURL: () => "https://example.com/amina.jpg",
         },
       } as never,
-      "vpe_1",
+      {
+        currentVpeId: "vpe_1",
+      },
     );
 
     expect(getFullList).toHaveBeenNthCalledWith(1, {
-      expand: "evaluator",
+      expand: "evaluator,vpe",
       filter: "vpe = 'vpe_1'",
       sort: "-created",
     });
     expect(getFullList).toHaveBeenNthCalledWith(2, {
-      expand: "evaluator",
+      expand: "evaluator,vpe",
       filter: "vpe = 'vpe_1'",
     });
     expect(result).toHaveLength(1);
@@ -121,7 +139,9 @@ describe("listInvitationStatusItems", () => {
           getURL: () => "https://example.com/amina.jpg",
         },
       } as never,
-      "vpe_1",
+      {
+        currentVpeId: "vpe_1",
+      },
     );
 
     expect(result).toEqual([]);
@@ -132,9 +152,9 @@ describe("summarizeInvitationStatuses", () => {
   it("summarizes pending, confirmed, and declined counts", () => {
     expect(
       summarizeInvitationStatuses([
-        { id: "1", evaluatorName: "", evaluatorEmail: "", evaluatorProfile: "", evaluatorPhotoUrl: "", meetingTitle: "", meetingDate: "", meetingNote: "", status: "pending" },
-        { id: "2", evaluatorName: "", evaluatorEmail: "", evaluatorProfile: "", evaluatorPhotoUrl: "", meetingTitle: "", meetingDate: "", meetingNote: "", status: "accepted" },
-        { id: "3", evaluatorName: "", evaluatorEmail: "", evaluatorProfile: "", evaluatorPhotoUrl: "", meetingTitle: "", meetingDate: "", meetingNote: "", status: "declined" },
+        { id: "1", evaluatorName: "", evaluatorEmail: "", evaluatorProfile: "", evaluatorPhotoUrl: "", requestedByName: "", requestedByEmail: "", ownedByCurrentVpe: true, meetingTitle: "", meetingDate: "", meetingNote: "", status: "pending" },
+        { id: "2", evaluatorName: "", evaluatorEmail: "", evaluatorProfile: "", evaluatorPhotoUrl: "", requestedByName: "", requestedByEmail: "", ownedByCurrentVpe: true, meetingTitle: "", meetingDate: "", meetingNote: "", status: "accepted" },
+        { id: "3", evaluatorName: "", evaluatorEmail: "", evaluatorProfile: "", evaluatorPhotoUrl: "", requestedByName: "", requestedByEmail: "", ownedByCurrentVpe: false, meetingTitle: "", meetingDate: "", meetingNote: "", status: "declined" },
       ]),
     ).toEqual({
       pending: 1,

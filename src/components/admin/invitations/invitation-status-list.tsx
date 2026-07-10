@@ -12,6 +12,9 @@ type InvitationListItem = {
   evaluatorEmail: string;
   evaluatorProfile: string;
   evaluatorPhotoUrl: string;
+  requestedByName: string;
+  requestedByEmail: string;
+  ownedByCurrentVpe: boolean;
   meetingTitle: string;
   meetingDate: string;
   meetingNote: string;
@@ -49,12 +52,37 @@ export function InvitationStatusList({
 }) {
   const router = useRouter();
   const [openInvitationId, setOpenInvitationId] = useState(initialOpenInvitationId ?? "");
+  const [searchValue, setSearchValue] = useState("");
   const [localErrorMessage, setLocalErrorMessage] = useState(errorMessage);
   const [localSuccessMessage, setLocalSuccessMessage] = useState(successMessage);
   const [pendingAction, setPendingAction] = useState<{
     invitationId: string;
     kind: "reschedule" | "cancel";
   } | null>(null);
+  const filteredInvitations = useMemo(() => {
+    const normalizedSearch = searchValue.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return invitations;
+    }
+
+    return invitations.filter((invitation) =>
+      [
+        invitation.evaluatorName,
+        invitation.evaluatorEmail,
+        invitation.evaluatorProfile,
+        invitation.requestedByName,
+        invitation.requestedByEmail,
+        invitation.meetingTitle,
+        invitation.meetingDate,
+        invitation.meetingNote,
+        invitation.status,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch),
+    );
+  }, [invitations, searchValue]);
   const selectedInvitation = useMemo(
     () => invitations.find((invitation) => invitation.id === openInvitationId),
     [invitations, openInvitationId],
@@ -166,7 +194,7 @@ export function InvitationStatusList({
             Confirmation board
           </p>
           <h2 className="mt-2 text-balance text-2xl font-semibold tracking-[-0.05em] text-zinc-950">
-            No confirmations match this view yet
+            No invitations match this view yet
           </h2>
           <p className="mt-2 text-sm leading-7 text-zinc-600">
             Send a new request or switch the filter.
@@ -206,6 +234,22 @@ export function InvitationStatusList({
             </p>
           ) : null}
 
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="grid w-full gap-2 sm:max-w-md">
+              <span className="sr-only">Search confirmation board</span>
+              <input
+                type="search"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Search evaluator, requester, meeting, date, or status"
+                className="h-11 rounded-[0.95rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 text-sm text-zinc-700 outline-none placeholder:text-zinc-400 focus:border-[var(--accent)]"
+              />
+            </label>
+            <p className="text-sm text-zinc-500">
+              Showing {filteredInvitations.length} of {invitations.length}
+            </p>
+          </div>
+
           <div className="mt-5 overflow-hidden rounded-[1.2rem] border border-[#ece4d8] bg-[#fcfaf7]">
             <div className="hidden grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)_minmax(0,0.7fr)_auto] gap-4 border-b border-[#ece4d8] px-4 py-3 text-[11px] font-medium tracking-[0.22em] text-zinc-500 uppercase lg:grid">
               <span>Evaluator</span>
@@ -214,7 +258,13 @@ export function InvitationStatusList({
               <span className="text-right">Actions</span>
             </div>
 
-            {invitations.map((invitation) => (
+            {filteredInvitations.length === 0 ? (
+              <div className="px-4 py-10 text-center text-sm text-zinc-500">
+                No invitations match your search.
+              </div>
+            ) : null}
+
+            {filteredInvitations.map((invitation) => (
               <article
                 key={invitation.id}
                 className="grid gap-4 border-t border-[#ece4d8] px-4 py-4 first:border-t-0 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.85fr)_minmax(0,0.7fr)_auto] lg:items-center"
@@ -238,6 +288,9 @@ export function InvitationStatusList({
                       {invitation.evaluatorName}
                     </h3>
                     <p className="truncate text-sm text-[var(--accent)]">{invitation.evaluatorEmail}</p>
+                    <p className="mt-1 truncate text-sm text-zinc-500">
+                      Requested by {invitation.requestedByName}
+                    </p>
                     <p className="mt-1 line-clamp-2 text-sm leading-6 text-zinc-600">
                       {invitation.evaluatorProfile}
                     </p>

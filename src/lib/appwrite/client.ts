@@ -314,14 +314,63 @@ async function expandEvaluatorReference(
   }
 }
 
+async function expandVpeReference(
+  env: AppwriteEnv,
+  document: AppwriteDocument,
+) {
+  const vpeId = typeof document.vpe === "string" ? document.vpe : "";
+
+  if (!vpeId) {
+    return document;
+  }
+
+  try {
+    const vpeDocument = await requestJson<AppwriteDocument>(
+      env,
+      `/databases/${APPWRITE_DATABASE_ID}/collections/${APPWRITE_COLLECTION_IDS.vpes}/documents/${vpeId}`,
+      {
+        method: "GET",
+      },
+    );
+
+    return {
+      ...document,
+      expand: {
+        ...(typeof document.expand === "object" && document.expand !== null ? document.expand : {}),
+        vpe: mapDocument("vpes", APPWRITE_COLLECTION_IDS.vpes, vpeDocument),
+      },
+    };
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "status" in error && error.status === 404) {
+      return document;
+    }
+
+    throw error;
+  }
+}
+
 async function expandDocument(
   env: AppwriteEnv,
   collectionName: AppwriteCollectionName,
   document: AppwriteDocument,
   expand?: string,
 ) {
-  if (collectionName === "invitations" && expand === "evaluator") {
-    return expandEvaluatorReference(env, document);
+  if (collectionName === "invitations" && expand) {
+    const expandTargets = expand
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    let expandedDocument = document;
+
+    if (expandTargets.includes("evaluator")) {
+      expandedDocument = await expandEvaluatorReference(env, expandedDocument);
+    }
+
+    if (expandTargets.includes("vpe")) {
+      expandedDocument = await expandVpeReference(env, expandedDocument);
+    }
+
+    return expandedDocument;
   }
 
   return document;

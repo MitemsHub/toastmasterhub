@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  cancelInvitation,
   createConfirmationRequest,
   EvaluatorDateConflictError,
   rescheduleInvitation,
@@ -415,5 +416,97 @@ describe("rescheduleInvitation", () => {
       status: "accepted",
       token_hash: "old-hash",
     });
+  });
+
+  it("allows another authenticated VPE to reschedule a shared invitation", async () => {
+    const getFirstListItem = vi.fn().mockResolvedValue({
+      id: "inv_1",
+      evaluator: "eva_1",
+      meeting_title: "Old Meeting",
+      meeting_date: "2026-08-01",
+      meeting_note: "Old note",
+      sent_at: "2026-07-20T10:00:00.000Z",
+      responded_at: "2026-07-25T10:00:00.000Z",
+      status: "accepted",
+      token_hash: "old-hash",
+      expand: {
+        evaluator: {
+          full_name: "Amina Bello",
+          email: "amina@example.com",
+        },
+      },
+    });
+    const getFullList = vi.fn().mockResolvedValue([]);
+    const updateInvitation = vi.fn().mockResolvedValue(undefined);
+    const sendMail = vi.fn().mockResolvedValue(undefined);
+    const formData = new FormData();
+
+    formData.set("invitationId", "inv_1");
+    formData.set("meetingTitle", "New Meeting");
+    formData.set("meetingDate", "2026-09-01");
+    formData.set("meetingNote", "New note");
+
+    await rescheduleInvitation(
+      {
+        collection: () => ({
+          getFirstListItem,
+          getFullList,
+          update: updateInvitation,
+        }),
+        filter: vi.fn().mockReturnValue("invitation-filter"),
+      } as never,
+      {
+        sendMail,
+      },
+      {
+        fromAddress: "club@example.com",
+        appBaseUrl: "https://toastmasters.example",
+      },
+      {
+        vpeId: "vpe_2",
+        vpeName: "Another VPE",
+      },
+      formData,
+    );
+
+    expect(getFirstListItem).toHaveBeenCalledWith("invitation-filter", {
+      expand: "evaluator",
+    });
+    expect(updateInvitation).toHaveBeenCalledWith(
+      "inv_1",
+      expect.objectContaining({
+        meeting_title: "New Meeting",
+        meeting_date: "2026-09-01",
+      }),
+    );
+  });
+});
+
+describe("cancelInvitation", () => {
+  it("allows another authenticated VPE to cancel a shared invitation", async () => {
+    const getFirstListItem = vi.fn().mockResolvedValue({
+      id: "inv_1",
+    });
+    const deleteInvitationRecord = vi.fn().mockResolvedValue(undefined);
+
+    await cancelInvitation(
+      {
+        collection: () => ({
+          getFirstListItem,
+          delete: deleteInvitationRecord,
+        }),
+        filter: vi.fn().mockReturnValue("invitation-filter"),
+      } as never,
+      {
+        vpeId: "vpe_2",
+        vpeName: "Another VPE",
+      },
+      "inv_1",
+    );
+
+    expect(getFirstListItem).toHaveBeenCalledWith("invitation-filter", {
+      expand: "evaluator",
+    });
+    expect(deleteInvitationRecord).toHaveBeenCalledWith("inv_1");
   });
 });

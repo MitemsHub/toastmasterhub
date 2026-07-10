@@ -7,6 +7,9 @@ export type InvitationStatusItem = {
   evaluatorEmail: string;
   evaluatorProfile: string;
   evaluatorPhotoUrl: string;
+  requestedByName: string;
+  requestedByEmail: string;
+  ownedByCurrentVpe: boolean;
   meetingTitle: string;
   meetingDate: string;
   meetingNote: string;
@@ -21,6 +24,7 @@ type InvitationRecordWithExpand = Pick<
   InvitationRecord,
   "id" | "meeting_title" | "meeting_date" | "meeting_note" | "status" | "sent_at" | "responded_at"
 > & {
+  vpe: string;
   expand?: {
     evaluator?: {
       full_name?: string;
@@ -28,19 +32,39 @@ type InvitationRecordWithExpand = Pick<
       profile?: string;
       photo?: string;
     };
+    vpe?: {
+      full_name?: string;
+      email?: string;
+    };
   };
+};
+
+type InvitationStatusListOptions = {
+  currentVpeId: string;
+  includeAllVpes?: boolean;
+  status?: InvitationStatus;
 };
 
 function createInvitationScopeFilter(
   pb: Pick<BackendClient, "filter">,
-  vpeId: string,
-  status?: InvitationStatus,
+  options: InvitationStatusListOptions,
 ) {
-  if (!status) {
-    return pb.filter("vpe = {:vpeId}", { vpeId });
+  if (options.includeAllVpes && options.status) {
+    return pb.filter("status = {:status}", { status: options.status });
   }
 
-  return pb.filter("vpe = {:vpeId} && status = {:status}", { vpeId, status });
+  if (options.includeAllVpes) {
+    return undefined;
+  }
+
+  if (!options.status) {
+    return pb.filter("vpe = {:vpeId}", { vpeId: options.currentVpeId });
+  }
+
+  return pb.filter("vpe = {:vpeId} && status = {:status}", {
+    vpeId: options.currentVpeId,
+    status: options.status,
+  });
 }
 
 function isRecoverableBackendListError(error: unknown) {
@@ -51,14 +75,17 @@ function isRecoverableBackendListError(error: unknown) {
 
 async function getInvitationRecords(
   pb: InvitationStoreClient,
-  vpeId: string,
-  status?: InvitationStatus,
+  options: InvitationStatusListOptions,
 ) {
-  const filter = createInvitationScopeFilter(pb, vpeId, status);
+  const filter = createInvitationScopeFilter(pb, {
+    currentVpeId: options.currentVpeId,
+    includeAllVpes: options.includeAllVpes,
+    status: options.status,
+  });
 
   try {
     return await pb.collection("invitations").getFullList<InvitationRecordWithExpand>({
-      expand: "evaluator",
+      expand: "evaluator,vpe",
       filter,
       sort: "-created",
     });
@@ -68,7 +95,7 @@ async function getInvitationRecords(
     }
 
     return pb.collection("invitations").getFullList<InvitationRecordWithExpand>({
-      expand: "evaluator",
+      expand: "evaluator,vpe",
       filter,
     });
   }
@@ -76,13 +103,12 @@ async function getInvitationRecords(
 
 export async function listInvitationStatusItems(
   pb: InvitationStoreClient,
-  vpeId: string,
-  status?: InvitationStatus,
+  options: InvitationStatusListOptions,
 ): Promise<InvitationStatusItem[]> {
   let records: InvitationRecordWithExpand[] = [];
 
   try {
-    records = await getInvitationRecords(pb, vpeId, status);
+    records = await getInvitationRecords(pb, options);
   } catch (error) {
     if (!isRecoverableBackendListError(error)) {
       throw error;
@@ -97,6 +123,9 @@ export async function listInvitationStatusItems(
     evaluatorPhotoUrl: record.expand?.evaluator?.photo
       ? pb.files.getURL(record.expand.evaluator, record.expand.evaluator.photo)
       : "",
+    requestedByName: record.expand?.vpe?.full_name ?? "Unknown VPE",
+    requestedByEmail: record.expand?.vpe?.email ?? "",
+    ownedByCurrentVpe: record.vpe === options.currentVpeId,
     meetingTitle: record.meeting_title,
     meetingDate: record.meeting_date,
     meetingNote: record.meeting_note ?? "",

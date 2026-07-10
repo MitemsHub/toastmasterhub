@@ -52,7 +52,10 @@ export default async function InvitationsPage({ searchParams }: InvitationsPageP
     redirect("/login?next=%2Fadmin%2Finvitations");
   }
 
-  const allInvitations = await listInvitationStatusItems(pb, vpe.id);
+  const allInvitations = await listInvitationStatusItems(pb, {
+    currentVpeId: vpe.id,
+    includeAllVpes: true,
+  });
   const filteredInvitations =
     activeFilter === "all"
       ? allInvitations

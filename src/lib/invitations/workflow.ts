@@ -93,15 +93,13 @@ function getInvitationInput(formData: FormData) {
   });
 }
 
-async function getScopedInvitation(
+async function getInvitationById(
   pb: DeliveryStoreClient,
-  vpeId: string,
   invitationId: string,
 ) {
   return pb.collection("invitations").getFirstListItem<InvitationEditableRecord>(
-    pb.filter("$id = {:invitationId} && vpe = {:vpeId}", {
+    pb.filter("$id = {:invitationId}", {
       invitationId,
-      vpeId,
     }),
     {
       expand: "evaluator",
@@ -221,7 +219,7 @@ export async function rescheduleInvitation(
     }),
   }).catch(() => {});
   // #endregion
-  const record = await getScopedInvitation(pb, context.vpeId, invitationId);
+  const record = await getInvitationById(pb, invitationId);
   const token = await createInvitationToken();
   const previousInvitationState = {
     meeting_title: record.meeting_title,
@@ -343,7 +341,7 @@ export async function cancelInvitation(
   context: DeliveryContext,
   invitationId: string,
 ) {
-  const record = await getScopedInvitation(pb, context.vpeId, invitationId);
+  const record = await getInvitationById(pb, invitationId);
 
   await pb.collection("invitations").delete(record.id);
 }

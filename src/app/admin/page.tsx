@@ -30,7 +30,9 @@ export default async function AdminPage() {
   }
 
   vpeName = vpe.name;
-  const invitations = await listInvitationStatusItems(pb, vpe.id);
+  const invitations = await listInvitationStatusItems(pb, {
+    currentVpeId: vpe.id,
+  });
   summary = summarizeInvitationStatuses(invitations);
 
   if (!vpeName) {

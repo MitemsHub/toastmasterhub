@@ -14,6 +14,10 @@ vi.mock("next/headers", () => ({
 
 vi.mock("@/lib/next/navigation", () => ({
   redirect: vi.fn(),
+  useRouter: () => ({
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
 }));
 
 vi.mock("@/lib/invitations/service", () => ({
@@ -70,6 +74,9 @@ describe("InvitationsPage", () => {
         evaluatorEmail: "amina@example.com",
         evaluatorProfile: "Warm evaluator who gives direct and practical feedback.",
         evaluatorPhotoUrl: "https://example.com/amina.jpg",
+        requestedByName: "Amina Bello",
+        requestedByEmail: "amina@example.com",
+        ownedByCurrentVpe: true,
         meetingTitle: "Toastmasters Club Meeting",
         meetingDate: "2026-08-15",
         meetingNote: "Please arrive early.",
@@ -85,6 +92,13 @@ describe("InvitationsPage", () => {
     expect(screen.getByText("Toastmasters Club Meeting")).toBeInTheDocument();
     expect(screen.getByText(/fresh confirmation link has been sent/i)).toBeInTheDocument();
     expect(screen.getAllByText("Pending")).toHaveLength(2);
+    expect(vi.mocked(listInvitationStatusItems)).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        currentVpeId: "vpe_1",
+        includeAllVpes: true,
+      },
+    );
   });
 
   it("lets the admin layout handle backend outages", async () => {
