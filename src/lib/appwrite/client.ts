@@ -313,7 +313,7 @@ function createCollectionClient(
   const collectionPath = `/databases/${env.APPWRITE_DATABASE_ID}/collections/${collectionId}/documents`;
 
   return {
-    async getFirstListItem<T>(filter, options) {
+    async getFirstListItem<T>(filter: BackendFilter, options?: FirstListOptions) {
       const url = createUrl(env, collectionPath);
 
       for (const query of createListQueries(filter, undefined, 1)) {
@@ -333,7 +333,7 @@ function createCollectionClient(
 
       return mapDocument<T>(collectionName, collectionId, expanded);
     },
-    async getOne<T>(id) {
+    async getOne<T>(id: string) {
       const document = await requestJson<AppwriteDocument>(
         env,
         `${collectionPath}/${id}`,
@@ -342,7 +342,7 @@ function createCollectionClient(
 
       return mapDocument<T>(collectionName, collectionId, document);
     },
-    async getFullList<T>(options) {
+    async getFullList<T>(options?: ListOptions) {
       const url = createUrl(env, collectionPath);
 
       for (const query of createListQueries(options?.filter, options?.sort)) {
@@ -363,7 +363,7 @@ function createCollectionClient(
         mapDocument<T>(collectionName, collectionId, document),
       );
     },
-    async create<T>(data) {
+    async create<T>(data: Record<string, unknown>) {
       const preparedData = await prepareDocumentData(env, collectionName, data);
       const document = await requestJson<AppwriteDocument>(
         env,
@@ -379,7 +379,7 @@ function createCollectionClient(
 
       return mapDocument<T>(collectionName, collectionId, document);
     },
-    async update<T>(id, data) {
+    async update<T>(id: string, data: Record<string, unknown>) {
       const preparedData = await prepareDocumentData(env, collectionName, data);
       const document = await requestJson<AppwriteDocument>(
         env,
@@ -394,7 +394,7 @@ function createCollectionClient(
 
       return mapDocument<T>(collectionName, collectionId, document);
     },
-    async delete(id) {
+    async delete(id: string) {
       await requestWithoutJson(env, `${collectionPath}/${id}`, {
         method: "DELETE",
       });
@@ -413,10 +413,10 @@ export function createAppwriteClient(): BackendClient {
   const env = getEnv();
 
   return {
-    collection(name) {
+    collection(name: AppwriteCollectionName) {
       return createCollectionClient(env, name);
     },
-    filter(template, params) {
+    filter(template: string, params: Record<string, string>) {
       return {
         conditions: template
           .split("&&")
@@ -438,7 +438,7 @@ export function createAppwriteClient(): BackendClient {
       };
     },
     files: {
-      getURL(_record, fileId) {
+      getURL(_record: unknown, fileId: string) {
         return createPublicFileUrl(env, fileId);
       },
     },
