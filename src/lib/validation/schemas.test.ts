@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { contactLeadSchema } from "./contact";
 import { evaluatorSchema } from "./evaluator";
 import { invitationSchema } from "./invitation";
 import { accessCodeSchema, vpeSignupSchema } from "./vpe";
@@ -8,6 +9,7 @@ describe("evaluatorSchema", () => {
     const result = evaluatorSchema.safeParse({
       fullName: "Jane Doe",
       email: "jane@example.com",
+      phone: "+2348012345678",
       profile: "Level 2 speaker and evaluator",
       photoPath: "jane-doe.jpg",
     });
@@ -19,6 +21,7 @@ describe("evaluatorSchema", () => {
     const result = evaluatorSchema.safeParse({
       fullName: "Jane Doe",
       email: "jane@example.com",
+      phone: "+2348012345678",
       profile: "Level 2 speaker and evaluator",
       photoPath: "",
     });
@@ -68,5 +71,29 @@ describe("accessCodeSchema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe("contactLeadSchema", () => {
+  it("accepts a valid MitemsHub inquiry", () => {
+    const result = contactLeadSchema.safeParse({
+      fullName: "Chuks Mitti",
+      email: "chuks@example.com",
+      projectType: "Custom website",
+      message: "I want a custom website for our company with a clean admin dashboard.",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an inquiry with a short message", () => {
+    const result = contactLeadSchema.safeParse({
+      fullName: "Chuks Mitti",
+      email: "chuks@example.com",
+      projectType: "Custom website",
+      message: "Too short",
+    });
+
+    expect(result.success).toBe(false);
   });
 });

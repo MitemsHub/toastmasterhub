@@ -32,6 +32,7 @@ export default async function AdminPage() {
   vpeName = vpe.name;
   const invitations = await listInvitationStatusItems(pb, {
     currentVpeId: vpe.id,
+    includeAllVpes: true,
   });
   summary = summarizeInvitationStatuses(invitations);
 
@@ -71,7 +72,7 @@ export default async function AdminPage() {
               Keep requests moving without repeating work.
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-7 text-zinc-600">
-              Reuse shared evaluator profiles, track replies, and reschedule only the meeting date when plans change for {vpeName}.
+              Reuse shared evaluator profiles, track replies across the shared confirmation board, and reschedule the meeting date when plans change for {vpeName}.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[1.1rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 py-3 text-sm text-zinc-600">

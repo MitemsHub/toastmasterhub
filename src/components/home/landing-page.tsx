@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { LandingVisualCarousel } from "@/components/home/landing-visual-carousel";
@@ -89,71 +90,7 @@ export function LandingPage({
                       <div className="inline-flex items-center rounded-full border border-[#e5ddd2] bg-[#faf7f2] px-3 py-1.5 text-[11px] font-medium tracking-[0.24em] text-zinc-500 uppercase">
                         Club access
                       </div>
-                      <motion.div
-                        aria-label="Live radar"
-                        className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.96),rgba(250,242,246,0.98))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_10px_24px_-18px_rgba(161,55,91,0.28)]"
-                        initial={false}
-                        animate={{ scale: [1, 1.015, 1] }}
-                        transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <div className="absolute inset-[5px] overflow-hidden rounded-full">
-                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(161,55,91,0.05),transparent_58%)]" />
-
-                          <motion.span
-                            className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--accent)]/22"
-                            animate={{ scale: [1, 4.2], opacity: [0, 0.58, 0] }}
-                            transition={{ duration: 2.2, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
-                          />
-                          <motion.span
-                            className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--accent)]/18"
-                            animate={{ scale: [1, 4.2], opacity: [0, 0.46, 0] }}
-                            transition={{
-                              duration: 2.2,
-                              repeat: Infinity,
-                              ease: [0.16, 1, 0.3, 1],
-                              delay: 0.55,
-                            }}
-                          />
-                          <motion.span
-                            className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--accent)]/14"
-                            animate={{ scale: [1, 4.2], opacity: [0, 0.34, 0] }}
-                            transition={{
-                              duration: 2.2,
-                              repeat: Infinity,
-                              ease: [0.16, 1, 0.3, 1],
-                              delay: 1.1,
-                            }}
-                          />
-                        </div>
-
-                        <motion.span
-                          className="absolute h-4 w-4 rounded-full bg-[var(--accent)]/16 blur-[1.5px]"
-                          animate={{
-                            scale: [0.95, 1.55, 1.05, 0.95],
-                            opacity: [0.18, 0.72, 0.34, 0.18],
-                          }}
-                          transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.14, 0.28, 1], ease: "easeOut" }}
-                        />
-                        <motion.span
-                          className="absolute h-2.5 w-2.5 rounded-full bg-[var(--accent)]"
-                          animate={{
-                            scale: [1, 1.28, 1.05, 1],
-                            filter: [
-                              "brightness(0.94) saturate(0.92)",
-                              "brightness(1.28) saturate(1.3)",
-                              "brightness(1.06) saturate(1.05)",
-                              "brightness(0.94) saturate(0.92)",
-                            ],
-                            boxShadow: [
-                              "0 0 0 6px rgba(161,55,91,0.08)",
-                              "0 0 0 10px rgba(161,55,91,0.18)",
-                              "0 0 0 7px rgba(161,55,91,0.11)",
-                              "0 0 0 6px rgba(161,55,91,0.08)",
-                            ],
-                          }}
-                          transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.14, 0.28, 1], ease: "easeOut" }}
-                        />
-                      </motion.div>
+                        <RadarIndicator />
                     </div>
 
                     <div className="space-y-2">
@@ -331,6 +268,96 @@ export function LandingPage({
           </Reveal>
         </div>
       </section>
+
+      <section className="px-4 pb-6 sm:px-8 sm:pb-8 lg:px-12 lg:pb-10">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3 rounded-[1.5rem] border border-[#ddd6cc] bg-white/90 px-4 py-3 shadow-[0_32px_100px_-70px_rgba(15,23,42,0.22)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="text-xs text-zinc-400">
+            <p>
+              Toast Masters Hub <span aria-hidden="true">®</span>
+              <span className="sr-only">Registered trademark</span> 2026
+            </p>
+          </div>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2.5 self-start rounded-full border border-[#e5ddd2] bg-[#faf7f2] px-3 py-1.5 text-left hover:-translate-y-0.5 hover:border-[var(--accent)]/26 hover:bg-white sm:self-center"
+          >
+            <RadarIndicator className="h-8 w-8" />
+            <span className="text-xs font-medium text-zinc-600">
+              Powered by <span className="text-zinc-950">MitemsHub</span>
+            </span>
+          </Link>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function RadarIndicator({ className = "h-12 w-12" }: { className?: string }) {
+  return (
+    <motion.div
+      aria-label="Live radar"
+      className={`relative flex items-center justify-center rounded-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.96),rgba(250,242,246,0.98))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_10px_24px_-18px_rgba(161,55,91,0.28)] ${className}`}
+      initial={false}
+      animate={{ scale: [1, 1.015, 1] }}
+      transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <div className="absolute inset-[5px] overflow-hidden rounded-full">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(161,55,91,0.05),transparent_58%)]" />
+
+        <motion.span
+          className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--accent)]/22"
+          animate={{ scale: [1, 4.2], opacity: [0, 0.58, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: [0.16, 1, 0.3, 1] }}
+        />
+        <motion.span
+          className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--accent)]/18"
+          animate={{ scale: [1, 4.2], opacity: [0, 0.46, 0] }}
+          transition={{
+            duration: 2.2,
+            repeat: Infinity,
+            ease: [0.16, 1, 0.3, 1],
+            delay: 0.55,
+          }}
+        />
+        <motion.span
+          className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--accent)]/14"
+          animate={{ scale: [1, 4.2], opacity: [0, 0.34, 0] }}
+          transition={{
+            duration: 2.2,
+            repeat: Infinity,
+            ease: [0.16, 1, 0.3, 1],
+            delay: 1.1,
+          }}
+        />
+      </div>
+
+      <motion.span
+        className="absolute h-4 w-4 rounded-full bg-[var(--accent)]/16 blur-[1.5px]"
+        animate={{
+          scale: [0.95, 1.55, 1.05, 0.95],
+          opacity: [0.18, 0.72, 0.34, 0.18],
+        }}
+        transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.14, 0.28, 1], ease: "easeOut" }}
+      />
+      <motion.span
+        className="absolute h-2.5 w-2.5 rounded-full bg-[var(--accent)]"
+        animate={{
+          scale: [1, 1.28, 1.05, 1],
+          filter: [
+            "brightness(0.94) saturate(0.92)",
+            "brightness(1.28) saturate(1.3)",
+            "brightness(1.06) saturate(1.05)",
+            "brightness(0.94) saturate(0.92)",
+          ],
+          boxShadow: [
+            "0 0 0 6px rgba(161,55,91,0.08)",
+            "0 0 0 10px rgba(161,55,91,0.18)",
+            "0 0 0 7px rgba(161,55,91,0.11)",
+            "0 0 0 6px rgba(161,55,91,0.08)",
+          ],
+        }}
+        transition={{ duration: 2.2, repeat: Infinity, times: [0, 0.14, 0.28, 1], ease: "easeOut" }}
+      />
+    </motion.div>
   );
 }
