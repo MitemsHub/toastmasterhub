@@ -31,6 +31,20 @@ export class InvalidSignupOtcError extends Error {
   }
 }
 
+export class VpeAccessDeliveryError extends Error {
+  accessCode: string;
+  vpe: AuthenticatedVpe;
+  cause?: unknown;
+
+  constructor(input: { accessCode: string; vpe: AuthenticatedVpe; cause?: unknown }) {
+    super("The access code was created but email delivery failed.");
+    this.name = "VpeAccessDeliveryError";
+    this.accessCode = input.accessCode;
+    this.vpe = input.vpe;
+    this.cause = input.cause;
+  }
+}
+
 function getStringValue(formData: FormData, key: string) {
   const value = formData.get(key);
 
@@ -107,15 +121,23 @@ export async function createOrRefreshVpeAccess(
     ? await pb.collection("vpes").update<VpeRecord>(existing.id, payload)
     : await pb.collection("vpes").create<VpeRecord>(payload);
 
-  await sendVpeAccessCodeEmail(
-    transporter,
-    { fromAddress: config.fromAddress },
-    {
-      fullName: input.fullName,
-      email: input.email,
+  try {
+    await sendVpeAccessCodeEmail(
+      transporter,
+      { fromAddress: config.fromAddress },
+      {
+        fullName: input.fullName,
+        email: input.email,
+        accessCode,
+      },
+    );
+  } catch (error) {
+    throw new VpeAccessDeliveryError({
       accessCode,
-    },
-  );
+      vpe: mapAuthenticatedVpe(vpe),
+      cause: error,
+    });
+  }
 
   return {
     accessCode,

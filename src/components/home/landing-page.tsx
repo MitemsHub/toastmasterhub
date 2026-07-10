@@ -11,6 +11,7 @@ type LandingPageProps = {
   loginErrorMessage?: string;
   signupErrorMessage?: string;
   signupSuccessMessage?: string;
+  persistSignupSuccess?: boolean;
   nextPath?: string;
   initialMode?: "login" | "signup";
 };
@@ -21,6 +22,7 @@ export function LandingPage({
   loginErrorMessage,
   signupErrorMessage,
   signupSuccessMessage,
+  persistSignupSuccess = false,
   nextPath = "/admin",
   initialMode = "login",
 }: LandingPageProps) {
@@ -45,7 +47,7 @@ export function LandingPage({
   }
 
   useEffect(() => {
-    if (!showSignupSuccess || mode !== "signup" || !signupSuccessKey) {
+    if (!showSignupSuccess || mode !== "signup" || !signupSuccessKey || persistSignupSuccess) {
       return;
     }
 
@@ -56,7 +58,7 @@ export function LandingPage({
     }, 3500);
 
     return () => window.clearTimeout(timeoutId);
-  }, [mode, showSignupSuccess, signupSuccessKey]);
+  }, [mode, persistSignupSuccess, showSignupSuccess, signupSuccessKey]);
 
   useEffect(() => {
     if (!showSignupError || mode !== "signup" || !signupErrorKey) {

@@ -9,11 +9,14 @@ import {
   authenticateVpeWithAccessCode,
   createOrRefreshVpeAccess,
   InvalidSignupOtcError,
+  VpeAccessDeliveryError,
 } from "@/lib/vpe/service";
 
 type HomePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+const VPE_SIGNUP_FALLBACK_CODE_COOKIE = "tm_vpe_signup_code";
 
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -32,11 +35,14 @@ function normalizeNextPath(nextPath: string | null | undefined) {
 }
 
 export default async function Home({ searchParams }: HomePageProps) {
+  const cookieStore = await cookies();
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const initialMode = getMode(getSearchParamValue(resolvedSearchParams.mode));
   const nextPath = normalizeNextPath(getSearchParamValue(resolvedSearchParams.next));
   const errorType = getSearchParamValue(resolvedSearchParams.error);
   const signupWasSent = getSearchParamValue(resolvedSearchParams.sent) === "1";
+  const deliveryMode = getSearchParamValue(resolvedSearchParams.delivery);
+  const manualAccessCode = cookieStore.get(VPE_SIGNUP_FALLBACK_CODE_COOKIE)?.value;
   const loginErrorMessage =
     errorType === "invalid-access-code"
       ? "We could not match that access code. Please check the code in your email and try again."
@@ -46,12 +52,19 @@ export default async function Home({ searchParams }: HomePageProps) {
       ? undefined
       : errorType === "signup-failed"
       ? "We could not send the access code. Please confirm your details and try again."
+      : errorType === "signup-backend-failed"
+        ? "We could not save your access request right now. Please try again in a moment."
+        : errorType === "signup-config-failed"
+          ? "The hosted email setup is not ready yet. Please try again shortly."
       : errorType === "invalid-signup-otc"
         ? "That OTC is not valid for new VPE signup. Please confirm it and try again."
         : undefined;
   const signupSuccessMessage = signupWasSent
-    ? "Your access code has been sent. Check your email, then switch back to login."
+    ? deliveryMode === "manual" && manualAccessCode
+      ? `Email delivery is delayed right now. Use this access code now: ${manualAccessCode}`
+      : "Your access code has been sent. Check your email, then switch back to login."
     : undefined;
+  const persistSignupSuccess = deliveryMode === "manual" && Boolean(manualAccessCode);
 
   async function continueWithAccessCode(formData: FormData) {
     "use server";
@@ -71,9 +84,8 @@ export default async function Home({ searchParams }: HomePageProps) {
           `/?mode=login&next=${encodeURIComponent(safeNextPath)}&error=invalid-access-code`,
         );
       }
-
-      const cookieStore = await cookies();
-      cookieStore.set(
+      const nextCookieStore = await cookies();
+      nextCookieStore.set(
         VPE_SESSION_COOKIE,
         createVpeSessionValue({
           vpeId: vpe.id,
@@ -115,6 +127,27 @@ export default async function Home({ searchParams }: HomePageProps) {
         redirect("/?mode=signup&error=invalid-signup-otc");
       }
 
+      if (error instanceof VpeAccessDeliveryError) {
+        const nextCookieStore = await cookies();
+
+        nextCookieStore.set(VPE_SIGNUP_FALLBACK_CODE_COOKIE, error.accessCode, {
+          httpOnly: true,
+          maxAge: 60 * 5,
+          path: "/",
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+        });
+        redirect("/?mode=signup&sent=1&delivery=manual");
+      }
+
+      if (typeof error === "object" && error !== null && "status" in error) {
+        redirect("/?mode=signup&error=signup-backend-failed");
+      }
+
+      if (typeof error === "object" && error !== null && "issues" in error) {
+        redirect("/?mode=signup&error=signup-config-failed");
+      }
+
       redirect("/?mode=signup&error=signup-failed");
     }
 
@@ -127,6 +160,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       loginAction={continueWithAccessCode}
       loginErrorMessage={loginErrorMessage}
       nextPath={nextPath}
+      persistSignupSuccess={persistSignupSuccess}
       signupAction={signup}
       signupErrorMessage={signupErrorMessage}
       signupSuccessMessage={signupSuccessMessage}

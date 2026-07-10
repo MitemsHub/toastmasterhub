@@ -68,6 +68,32 @@ describe("LandingPage", () => {
     expect(replaceStateSpy).toHaveBeenCalled();
   });
 
+  it("keeps a manual fallback access code visible until the user switches modes", () => {
+    vi.useFakeTimers();
+    const replaceStateSpy = vi.spyOn(window.history, "replaceState");
+
+    render(
+      <LandingPage
+        initialMode="signup"
+        persistSignupSuccess
+        signupSuccessMessage="Email delivery is delayed right now. Use this access code now: ABCD-1234"
+      />,
+    );
+
+    expect(screen.getByText(/use this access code now: abcd-1234/i)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(3500);
+    });
+
+    expect(screen.getByText(/use this access code now: abcd-1234/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /request code/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+  });
+
   it("clears the signup error banner after a short delay", () => {
     vi.useFakeTimers();
     const replaceStateSpy = vi.spyOn(window.history, "replaceState");
