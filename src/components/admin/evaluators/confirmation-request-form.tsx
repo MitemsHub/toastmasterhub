@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Reveal } from "@/components/motion/reveal";
 import { PendingSubmitButton } from "@/components/ui/pending-submit-button";
@@ -28,10 +28,20 @@ export function ConfirmationRequestForm({
   evaluators,
 }: ConfirmationRequestFormProps) {
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState("");
+  const [selectedPhotoPreviewUrl, setSelectedPhotoPreviewUrl] = useState<string | null>(null);
   const selectedEvaluator = useMemo(
     () => evaluators.find((evaluator) => evaluator.id === selectedEvaluatorId) ?? null,
     [evaluators, selectedEvaluatorId],
   );
+  const visiblePhotoUrl = selectedPhotoPreviewUrl ?? selectedEvaluator?.photoUrl ?? "";
+
+  useEffect(() => {
+    return () => {
+      if (selectedPhotoPreviewUrl) {
+        URL.revokeObjectURL(selectedPhotoPreviewUrl);
+      }
+    };
+  }, [selectedPhotoPreviewUrl]);
 
   return (
     <Reveal>
@@ -72,7 +82,14 @@ export function ConfirmationRequestForm({
                   name="evaluatorId"
                   required
                   value={selectedEvaluatorId}
-                  onChange={(event) => setSelectedEvaluatorId(event.target.value)}
+                  onChange={(event) => {
+                    if (selectedPhotoPreviewUrl) {
+                      URL.revokeObjectURL(selectedPhotoPreviewUrl);
+                    }
+
+                    setSelectedPhotoPreviewUrl(null);
+                    setSelectedEvaluatorId(event.target.value);
+                  }}
                   className="h-11 rounded-[0.95rem] border border-[#e6ddd1] bg-[#fcfaf7] px-4 outline-none focus:border-[var(--accent)]"
                 >
                   <option value="">Select evaluator</option>
@@ -85,11 +102,25 @@ export function ConfirmationRequestForm({
               </label>
 
               <label className="grid min-w-0 gap-2 text-sm font-medium text-zinc-800">
-                <span>{selectedEvaluator ? "Replace portrait" : "Evaluator portrait"}</span>
+                <span>{selectedEvaluator?.photoUrl ? "Replace portrait" : "Evaluator portrait"}</span>
                 <input
                   name="photo"
                   type="file"
                   accept="image/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+
+                    if (selectedPhotoPreviewUrl) {
+                      URL.revokeObjectURL(selectedPhotoPreviewUrl);
+                    }
+
+                    if (!file) {
+                      setSelectedPhotoPreviewUrl(null);
+                      return;
+                    }
+
+                    setSelectedPhotoPreviewUrl(URL.createObjectURL(file));
+                  }}
                   className="w-full rounded-[0.95rem] border border-dashed border-[#d8cebf] bg-[#fcfaf7] px-4 py-3 text-sm text-zinc-500 file:mr-3 file:border-0 file:bg-transparent file:font-medium file:text-zinc-700"
                 />
               </label>
@@ -98,13 +129,19 @@ export function ConfirmationRequestForm({
             {selectedEvaluator ? (
               <div className="grid gap-4 rounded-[1.1rem] border border-[#e6ddd1] bg-[#fcfaf7] p-4">
                 <div className="flex items-center gap-4">
-                  <Image
-                    src={selectedEvaluator.photoUrl}
-                    alt={selectedEvaluator.name}
-                    width={72}
-                    height={72}
-                    className="h-[4.5rem] w-[4.5rem] rounded-[1rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)]"
-                  />
+                  {visiblePhotoUrl ? (
+                    <Image
+                      src={visiblePhotoUrl}
+                      alt={selectedEvaluator.name}
+                      width={72}
+                      height={72}
+                      className="h-[4.5rem] w-[4.5rem] rounded-[1rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)]"
+                    />
+                  ) : (
+                    <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1rem] border border-dashed border-[#d8cebf] bg-white text-[11px] font-medium tracking-[0.18em] text-zinc-400 uppercase">
+                      No image
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-base font-semibold tracking-[-0.03em] text-zinc-950">
                       {selectedEvaluator.name}
@@ -116,6 +153,9 @@ export function ConfirmationRequestForm({
                   </div>
                 </div>
                 <div className="grid gap-2 text-sm text-zinc-600">
+                  {selectedPhotoPreviewUrl ? (
+                    <p className="font-medium text-emerald-700">Selected portrait will be saved for this evaluator.</p>
+                  ) : null}
                   <p className="font-medium text-zinc-800">Evaluator profile</p>
                   <p className="leading-6">{selectedEvaluator.profile}</p>
                 </div>

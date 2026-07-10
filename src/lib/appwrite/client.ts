@@ -36,6 +36,7 @@ type AppwriteDocument = Record<string, unknown> & {
 
 type AppwriteFile = {
   $id: string;
+  name?: string;
 };
 
 type BackendCollectionClient = {
@@ -52,6 +53,7 @@ export type BackendClient = {
   filter(template: string, params: Record<string, string>): BackendFilter;
   files: {
     getURL(record: unknown, fileId: string): string;
+    getInfo(fileId: string): Promise<AppwriteFile>;
   };
 };
 
@@ -460,6 +462,15 @@ export function createAppwriteClient(): BackendClient {
     files: {
       getURL(_record: unknown, fileId: string) {
         return createPublicFileUrl(env, fileId);
+      },
+      getInfo(fileId: string) {
+        return requestJson<AppwriteFile>(
+          env,
+          `/storage/buckets/${APPWRITE_STORAGE_BUCKET_ID}/files/${fileId}`,
+          {
+            method: "GET",
+          },
+        );
       },
     },
   };

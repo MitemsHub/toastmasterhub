@@ -1,6 +1,7 @@
 import { createEvaluatorProfileFromInput, DuplicateEvaluatorError } from "@/lib/evaluators/service";
 import type { BackendClient } from "@/lib/appwrite/client";
 import { Buffer } from "node:buffer";
+import { buildGeneratedEvaluatorPhotoName } from "@/lib/evaluators/photo";
 import { normalizePhoneNumber } from "@/lib/evaluators/phone";
 
 type EvaluatorImportClient = Pick<BackendClient, "collection" | "filter">;
@@ -99,7 +100,7 @@ const GENERATED_AVATAR_PNG_BASE64 =
 function createGeneratedAvatarFile(_fullName: string, rowNumber: number) {
   const photoBytes = Buffer.from(GENERATED_AVATAR_PNG_BASE64, "base64");
 
-  return new File([photoBytes], `evaluator-${rowNumber}.png`, {
+  return new File([photoBytes], buildGeneratedEvaluatorPhotoName(rowNumber), {
     type: "image/png",
   });
 }

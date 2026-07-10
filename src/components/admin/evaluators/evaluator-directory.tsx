@@ -34,6 +34,19 @@ function EvaluatorCard({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const portrait = evaluator.photoUrl ? (
+    <Image
+      src={evaluator.photoUrl}
+      alt={evaluator.name}
+      width={64}
+      height={64}
+      className="h-16 w-16 rounded-[1rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)]"
+    />
+  ) : (
+    <div className="flex h-16 w-16 items-center justify-center rounded-[1rem] border border-dashed border-[#d8cebf] bg-white text-[11px] font-medium tracking-[0.18em] text-zinc-400 uppercase">
+      No image
+    </div>
+  );
 
   if (isEditing) {
     return (
@@ -46,13 +59,7 @@ function EvaluatorCard({
       >
         <input type="hidden" name="evaluatorId" value={evaluator.id} />
         <div className="flex items-center gap-4">
-          <Image
-            src={evaluator.photoUrl}
-            alt={evaluator.name}
-            width={64}
-            height={64}
-            className="h-16 w-16 rounded-[1rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)]"
-          />
+          {portrait}
           {evaluator.createdAt ? (
             <p className="text-sm text-zinc-500">Added {evaluator.createdAt.slice(0, 10)}</p>
           ) : null}
@@ -126,13 +133,7 @@ function EvaluatorCard({
   return (
     <article className="grid gap-4 rounded-[1.2rem] border border-[#e6ddd1] bg-[#fcfaf7] p-4">
       <div className="grid gap-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-        <Image
-          src={evaluator.photoUrl}
-          alt={evaluator.name}
-          width={64}
-          height={64}
-          className="h-16 w-16 rounded-[1rem] object-cover shadow-[0_18px_34px_-22px_rgba(15,23,42,0.22)]"
-        />
+        {portrait}
         <div className="min-w-0">
           <h3 className="text-base font-semibold tracking-[-0.03em] text-zinc-950">
             {evaluator.name}

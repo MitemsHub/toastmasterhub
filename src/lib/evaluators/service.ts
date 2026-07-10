@@ -1,4 +1,5 @@
 import type { BackendClient } from "@/lib/appwrite/client";
+import { isGeneratedEvaluatorPhotoName } from "@/lib/evaluators/photo";
 import { formatPhoneNumberForDisplay, normalizePhoneNumber } from "@/lib/evaluators/phone";
 import type { EvaluatorRecord } from "@/lib/types";
 import { evaluatorSchema } from "@/lib/validation/evaluator";
@@ -54,6 +55,27 @@ async function getEvaluatorRecords(pb: EvaluatorDirectoryClient) {
   }
 }
 
+async function resolveEvaluatorPhotoUrl(
+  pb: EvaluatorDirectoryClient,
+  record: EvaluatorRecord,
+) {
+  if (!record.photo) {
+    return "";
+  }
+
+  try {
+    const photoInfo = await pb.files.getInfo(record.photo);
+
+    if (isGeneratedEvaluatorPhotoName(photoInfo.name ?? "")) {
+      return "";
+    }
+  } catch {
+    // Keep rendering the saved portrait URL if file metadata lookup fails.
+  }
+
+  return pb.files.getURL(record, record.photo);
+}
+
 async function findEvaluatorByEmail(
   pb: EvaluatorLookupClient,
   email: string,
@@ -102,16 +124,18 @@ export async function listEvaluatorDirectoryItems(
     }
   }
 
-  return records.map((record) => ({
-    id: record.id,
-    name: record.full_name,
-    email: record.email,
-    phone: formatPhoneNumberForDisplay(record.phone ?? ""),
-    profile: record.profile,
-    photoUrl: pb.files.getURL(record, record.photo),
-    createdAt: record.created ?? "",
-    createdByVpeId: record.vpe,
-  }));
+  return Promise.all(
+    records.map(async (record) => ({
+      id: record.id,
+      name: record.full_name,
+      email: record.email,
+      phone: formatPhoneNumberForDisplay(record.phone ?? ""),
+      profile: record.profile,
+      photoUrl: await resolveEvaluatorPhotoUrl(pb, record),
+      createdAt: record.created ?? "",
+      createdByVpeId: record.vpe,
+    })),
+  );
 }
 
 export async function getEvaluatorById(

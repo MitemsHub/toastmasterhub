@@ -29,6 +29,10 @@ describe("listEvaluatorDirectoryItems", () => {
       }),
       files: {
         getURL: () => "https://example.com/amina.jpg",
+        getInfo: vi.fn().mockResolvedValue({
+          $id: "file_1",
+          name: "amina.jpg",
+        }),
       },
     } as never);
 
@@ -73,6 +77,10 @@ describe("listEvaluatorDirectoryItems", () => {
       }),
       files: {
         getURL: () => "https://example.com/amina.jpg",
+        getInfo: vi.fn().mockResolvedValue({
+          $id: "file_1",
+          name: "amina.jpg",
+        }),
       },
     } as never);
 
@@ -89,6 +97,50 @@ describe("listEvaluatorDirectoryItems", () => {
         profile: "Warm evaluator who gives direct and practical feedback.",
         photoUrl: "https://example.com/amina.jpg",
         createdAt: "",
+        createdByVpeId: "vpe_1",
+      },
+    ]);
+  });
+
+  it("treats generated import avatars as missing portraits", async () => {
+    const getFullList = vi.fn().mockResolvedValue([
+      {
+        id: "eva_2",
+        collectionId: "collection",
+        collectionName: "evaluators",
+        created: "2026-07-06T00:00:00.000Z",
+        updated: "2026-07-06T00:00:00.000Z",
+        vpe: "vpe_1",
+        full_name: "Kunle Adeyemi",
+        email: "kunle@example.com",
+        phone: "+2348098765432",
+        profile: "Experienced evaluator for prepared speeches and table topics.",
+        photo: "file_2",
+      },
+    ]);
+
+    const result = await listEvaluatorDirectoryItems({
+      collection: () => ({
+        getFullList,
+      }),
+      files: {
+        getURL: vi.fn().mockReturnValue("https://example.com/generated.png"),
+        getInfo: vi.fn().mockResolvedValue({
+          $id: "file_2",
+          name: "generated-evaluator-avatar-2.png",
+        }),
+      },
+    } as never);
+
+    expect(result).toEqual([
+      {
+        id: "eva_2",
+        name: "Kunle Adeyemi",
+        email: "kunle@example.com",
+        phone: "+2348098765432",
+        profile: "Experienced evaluator for prepared speeches and table topics.",
+        photoUrl: "",
+        createdAt: "2026-07-06T00:00:00.000Z",
         createdByVpeId: "vpe_1",
       },
     ]);
