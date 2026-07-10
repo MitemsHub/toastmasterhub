@@ -36,20 +36,22 @@ export default async function Home({ searchParams }: HomePageProps) {
   const initialMode = getMode(getSearchParamValue(resolvedSearchParams.mode));
   const nextPath = normalizeNextPath(getSearchParamValue(resolvedSearchParams.next));
   const errorType = getSearchParamValue(resolvedSearchParams.error);
+  const signupWasSent = getSearchParamValue(resolvedSearchParams.sent) === "1";
   const loginErrorMessage =
     errorType === "invalid-access-code"
       ? "We could not match that access code. Please check the code in your email and try again."
       : undefined;
   const signupErrorMessage =
-    errorType === "signup-failed"
+    signupWasSent
+      ? undefined
+      : errorType === "signup-failed"
       ? "We could not send the access code. Please confirm your details and try again."
       : errorType === "invalid-signup-otc"
         ? "That OTC is not valid for new VPE signup. Please confirm it and try again."
         : undefined;
-  const signupSuccessMessage =
-    getSearchParamValue(resolvedSearchParams.sent) === "1"
-      ? "Your access code has been sent. Check your email, then switch back to login."
-      : undefined;
+  const signupSuccessMessage = signupWasSent
+    ? "Your access code has been sent. Check your email, then switch back to login."
+    : undefined;
 
   async function continueWithAccessCode(formData: FormData) {
     "use server";
